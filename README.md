@@ -3,7 +3,7 @@
 *Author: laoge <3385168058@qq.com>*
 *下面是详细使用方法*
 ```
-$ composer require playm3u8/Whttp
+$ composer require playm3u8/whttp
 ```
 *1. 引用命名空间*
 ```php
