@@ -1,0 +1,21 @@
+{
+    "name": "playm3u8/whttp",
+    "description": "非阻塞并发HTTP请求类(采集爬虫专用)",
+    "type": "library",
+    "license": "Apache-2.0",
+    "version": "1.0.1",
+    "authors": [
+        {
+            "name": "playm3u8",
+            "email": "3385168058@qq.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "playm3u8\\": ""
+        }
+    }
+}
