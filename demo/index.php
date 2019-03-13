@@ -5,7 +5,7 @@ require_once dirname(__DIR__)."/autoload.php";
 
 use PL\Whttp;
 
-$http = Whttp::get('https://www.baidu.com')->nobody(true);
+$http = Whttp::get('https://www.baidu.com')->cache(20)->nobody(true);
 if ($http->getError()) {
 	$http = "error: ".$http->getError();
 } else {

@@ -238,17 +238,34 @@ class WhttpClass
     private function single($options) 
     {
         $cacid = Null;
-        $cache = new Cache();
         // 数据存在就直接返回
         if($this->data) return $this->data;
         // 缓存ID标示
         $cacid = $this->getCacheID($options[0]);
-        // 判断是否存在
-        if ($cache->has($cacid)) 
+        // 识别缓存驱动
+        if (!empty($this->method['cache'])) 
         {
-            // 获取缓存解压数据
-            $this->data = unserialize(gzinflate($cache->get($cacid)));
-            return $this->data;
+            if (is_array($this->method['cache'])) {
+                // (thinkphp缓存）
+                if (gettype($this->method['cache'][0]) == 'object')
+                {
+                    $cache  = $this->method['cache'][0];
+                    $catime = $this->method['cache'][1];
+                } else {
+                    $cache  = $this->method['cache'][1];
+                    $catime = $this->method['cache'][0];
+                }
+            } else {
+                // (自带file缓存)
+                $cache = new Cache();
+                $catime = $this->method['cache'];
+            }
+            // 判断是否存在
+            if ($cache->has($cacid)) {
+                // 获取缓存解压数据
+                $this->data = unserialize(gzinflate($cache->get($cacid)));
+                return $this->data;
+            }
         }
         // 初始化
         $ch = curl_init();
