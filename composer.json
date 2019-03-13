@@ -14,7 +14,7 @@
     },
     "autoload": {
         "psr-4": {
-            "playm3u8\\": "src/"
+            "PL\\": "src/"
         }
     }
 }
