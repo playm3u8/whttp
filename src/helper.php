@@ -6,6 +6,20 @@
 // +----------------------------------------------------------------------
 // | Author: laoge <3385168058@qq.com>
 // +----------------------------------------------------------------------
+use PL\Fhttp;
+
+
+if (!function_exists('fhttp')) {
+    /**
+     * 网络请求 (fsockopen)
+     * @param  string $url 请求URL地址
+     * @return object
+     */
+    function fhttp($url)
+    {
+        return (new Fhttp($url));
+    }
+}
 
 if (!function_exists('left')) {
     /**
@@ -217,6 +231,18 @@ if (!function_exists('p')) {
     function p($arr, $die=false) {
         v_dump( $arr , 1 , '<pre>' , 0 );
         if($die) die;
+    }
+}
+
+if (!function_exists('shortMd5')) {
+    /**
+     * 返回16位md5值
+     *
+     * @param string $str 字符串
+     * @return string $str 返回16位的字符串
+     */
+    function shortMd5($str) {
+        return substr(md5($str), 8, 16);
     }
 }
 
@@ -446,6 +472,59 @@ if (!function_exists('current_ip')) {
             $ip = strtolower($ip);
         }
         return $ip;
+    }
+}
+
+if (!function_exists('format_header')) {
+   /**
+     * 格式化响应头部
+     * @param  string $value 协议头
+     * @return array        
+     */
+    function format_header(string $value) 
+    {
+        $array  = array();
+        // 分割成数组
+        $header = explode(PHP_EOL, $value);
+        if (strstr($value, 'Set-Cookie')) $array['Set-Cookie'] = Null;
+        // 把多行响应头信息转为组数数据
+        foreach ($header as $value) {
+            // 从左查找":"的位置
+            $wz = strpos($value, ":");
+            if ($wz !== false) {
+                // 取出返回请求头名称
+                $cName = substr($value, 0, $wz);
+                // 整理多行Cookie数据
+                if ($cName == "Set-Cookie") {
+                    // 获取Cookie值全部,里面会包含一些无用的信息需要去除掉
+                    $cName_value = substr($value, $wz + 2);
+                    if (strpos($cName_value, ';') === false) {
+                        // 如果没有无用的信息就直接此行提取全部值
+                        $array[$cName] .= $cName_value . "; ";
+                    } else {
+                        // 只取出";"最前面的数据，后面的不要
+                        $array[$cName] .= substr($cName_value, 0, strpos($cName_value, ';')) . "; ";
+                    }
+                } else {
+                    // 处理其他返回请求头数据
+                    $array[$cName] = substr($value, $wz + 2);
+                }
+            } else {
+                // 处理状态
+                if(preg_match_all('/(\d{1,2}\.\d{1,2})\s+(\d{3})\s+(.*)/', $value, $matches)){
+                    $array['State']['ProtocolVersion'] = $matches[1][0];
+                    $array['State']['StatusCode']      = $matches[2][0];
+                    $array['State']['ReasonPhrase']    = $matches[3][0];
+                }
+            }
+        }
+        // 把Cookie移动到最后，强迫症需理解
+        if (array_key_exists('Set-Cookie', $array)) {
+            $uArray = $array['Set-Cookie'];
+            unset($array['Set-Cookie']);
+            $array['Cookies'] = $uArray;
+        }
+        return $array;
     }
 }
 

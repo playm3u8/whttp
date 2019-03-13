@@ -661,11 +661,11 @@ class WhttpClass
             // 处理多响应头
             $headerStr    = explode("\r\n"."\r\n", $headerStr);
             // 取最后一个响应头
-            $data['headers'] = $this->format_header(end($headerStr));
+            $data['headers'] = format_header(end($headerStr));
             // 把父请求头取出来,有先到后
             if (count($headerStr) > 1) {
                 for ($i=0; $i < count($headerStr)-1; $i++) { 
-                    $data['headers']['Father'][$i] = $this->format_header($headerStr[$i]);
+                    $data['headers']['Father'][$i] = format_header($headerStr[$i]);
                 }
             }
         }
@@ -711,57 +711,6 @@ class WhttpClass
     {
         unset($options[CURLOPT_WRITEFUNCTION]);
         return md5(serialize($options));
-    }
-
-   /**
-     * 格式化响应头部
-     * @param  string $value 协议头
-     * @return array        
-     */
-    private function format_header(string $value) 
-    {
-        $array  = array();
-        // 分割成数组
-        $header = explode(PHP_EOL, $value);
-        if (strstr($value, 'Set-Cookie')) $array['Set-Cookie'] = Null;
-        // 把多行响应头信息转为组数数据
-        foreach ($header as $value) {
-            // 从左查找":"的位置
-            $wz = strpos($value, ":");
-            if ($wz !== false) {
-                // 取出返回请求头名称
-                $cName = substr($value, 0, $wz);
-                // 整理多行Cookie数据
-                if ($cName == "Set-Cookie") {
-                    // 获取Cookie值全部,里面会包含一些无用的信息需要去除掉
-                    $cName_value = substr($value, $wz + 2);
-                    if (strpos($cName_value, ';') === false) {
-                        // 如果没有无用的信息就直接此行提取全部值
-                        $array[$cName] .= $cName_value . "; ";
-                    } else {
-                        // 只取出";"最前面的数据，后面的不要
-                        $array[$cName] .= substr($cName_value, 0, strpos($cName_value, ';')) . "; ";
-                    }
-                } else {
-                    // 处理其他返回请求头数据
-                    $array[$cName] = substr($value, $wz + 2);
-                }
-            } else {
-                // 处理状态
-                if(preg_match_all('/(\d{1,2}\.\d{1,2})\s+(\d{3})\s+(.*)/', $value, $matches)){
-                    $array['State']['ProtocolVersion'] = $matches[1][0];
-                    $array['State']['StatusCode']      = $matches[2][0];
-                    $array['State']['ReasonPhrase']    = $matches[3][0];
-                }
-            }
-        }
-        // 把Cookie移动到最后，强迫症需理解
-        if (array_key_exists('Set-Cookie', $array)) {
-            $uArray = $array['Set-Cookie'];
-            unset($array['Set-Cookie']);
-            $array['Cookies'] = $uArray;
-        }
-        return $array;
     }
 
     /**
