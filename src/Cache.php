@@ -20,7 +20,7 @@ class Cache
         'expire'        => 60,
         'cache_subdir'  => true,
         'prefix'        => '',
-        'path'          => __DIR__.'/../runtime/cache/',
+        'path'          => PL_RUNTIME_PATH.'cache/',
         'data_compress' => false,
     );
 

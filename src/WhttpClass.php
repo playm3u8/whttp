@@ -9,7 +9,6 @@
 namespace PL;
 use Exception;
 
-
 class WhttpClass
 {
     /**
@@ -208,7 +207,7 @@ class WhttpClass
     public function getDownload($name=null, $path=null)
     {
         $this->method['fp_name'] = $name;
-        $this->method['fp_path'] = empty($path)? __DIR__.'/../runtime/file/' : $path;
+        $this->method['fp_path'] = empty($path)? PL_RUNTIME_PATH.'file/' : $path;
         // 发送请求
         $return = $this->send($this->config($this->method));
         return $return;

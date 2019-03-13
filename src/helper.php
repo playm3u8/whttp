@@ -8,6 +8,13 @@
 // +----------------------------------------------------------------------
 use PL\Fhttp;
 
+// 框架识别
+if (defined('THINK_PATH')) 
+{
+    define('PL_RUNTIME_PATH', RUNTIME_PATH);
+} else {
+    define('PL_RUNTIME_PATH', dirname(__DIR__).'/runtime/');
+}
 
 if (!function_exists('fhttp')) {
     /**
@@ -154,7 +161,7 @@ if (!function_exists('download')) {
     {
         if (empty($name) || !$body) return Null;
 
-        if (empty($path)) $path = __DIR__.'/../runtime/file/';
+        if (empty($path)) $path = PL_RUNTIME_PATH.'file/';
 
         // 创建目录
         if(!file_exists($path)) mkdir ($path, 0777, true);
