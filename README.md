@@ -19,7 +19,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getBody();
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 ```php
 // POST:
@@ -29,7 +29,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getBody();
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 ```php
 // PUT:
@@ -39,7 +39,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getBody();
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 ```php
 // PATCH:
@@ -49,7 +49,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getBody();
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 ```php
 // DELETE:
@@ -59,7 +59,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getBody();
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 *3. 设置Cookie*
 ```php
@@ -69,7 +69,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getBody();
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 *4. 我们来尝试获取百度搜索的Headers，看看是怎么操作的。*
 ```php
@@ -79,7 +79,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getHeaders();
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 *5. 获取响应状态（code）*
 ```php
@@ -89,7 +89,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getCode();
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 *6. 获取响应状态（info）*
 ```php
@@ -99,7 +99,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getInfo();
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 *7. 获取JSON再格式化为数组*
 ```php
@@ -109,7 +109,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getJson();
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 *8. 批量处理URL*
 ```php
@@ -123,7 +123,7 @@ Whttp::get($urls)->getGany(function($data){
 		echo "error: ".$http->getError()."<br>";
 	} else {
 		// 不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
-		Whttp::p($data);
+		p($data);
 	}
 	// 可以吧数据返回出去
 	// return "sssss";
@@ -148,7 +148,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getAll('download');
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 *10. 过程干预*
 ```php
@@ -164,7 +164,7 @@ if ($http->getError()) {
 } else {
 	$http = $http->getBody();
 }
-Whttp::p($http,true);
+p($http,true);
 ```
 *11. 原代码说明（参考）*
 ```php
