@@ -8,10 +8,6 @@
 // +----------------------------------------------------------------------
 namespace PL;
 use Exception;
-spl_autoload_register(function ($class) {
-    $string = explode("\\", $class);
-    require_once pathinfo(__FILE__,PATHINFO_DIRNAME).'/'.$string[1].'.php';
-});
 
 /**
  * HTTP请求类库

@@ -1,7 +1,7 @@
 <?php
 ini_set("html_errors","On");
 ini_set("display_errors","On");
-require_once(__DIR__.'/../src/Whttp.php');
+require_once __DIR__."/../autoload.php";
 
 use PL\Whttp;
 
