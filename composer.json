@@ -1,6 +1,6 @@
 {
     "name": "playm3u8/whttp",
-    "description": "非阻塞并发HTTP请求类(采集爬虫专用)",
+    "description": "PHP非阻塞并发HTTP请求类(采集爬虫专用)",
     "type": "library",
     "license": "Apache-2.0",
     "authors": [
@@ -14,7 +14,7 @@
     },
     "autoload": {
         "psr-4": {
-            "playm3u8\\": ""
+            "playm3u8\\": "src/"
         }
     }
 }

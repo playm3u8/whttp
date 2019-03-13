@@ -7,7 +7,7 @@ $ composer require playm3u8/whttp
 ```
 *1. 引用命名空间*
 ```php
-use playm3u8\Whttp;
+use PL\Whttp;
 ```
 
 *2. 请求方式*
