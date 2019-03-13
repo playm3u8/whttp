@@ -242,6 +242,7 @@ class WhttpClass
         if($this->data) return $this->data;
         // 缓存ID标示
         $cacid = $this->getCacheID($options[0]);
+
         // 识别缓存驱动
         if (!empty($this->method['cache'])) 
         {
@@ -257,8 +258,8 @@ class WhttpClass
                 }
             } else {
                 // (自带file缓存)
-                $cache = new Cache();
-                $catime = $this->method['cache'];
+                $cache  = new File();
+                $catime = $this->method['cache'][0];
             }
             // 判断是否存在
             if ($cache->has($cacid)) {
@@ -267,6 +268,7 @@ class WhttpClass
                 return $this->data;
             }
         }
+
         // 初始化
         $ch = curl_init();
         // 临时文件
@@ -298,6 +300,7 @@ class WhttpClass
         curl_close($ch);
         // 删除无用数据
         unset($this->data['exec']);
+
         // 缓存写入处理
         if (!empty($this->method['cache'])) {
             if (gettype($this->method['cache']) != 'integer') {
@@ -308,10 +311,11 @@ class WhttpClass
             {
                 // 压缩写入缓存
                 if (empty($this->data['errer']) && $this->data['headers']) {
-                    $cache->set($cacid, gzdeflate(serialize($this->data)), $this->method['cache']);
+                    $cache->set($cacid, gzdeflate(serialize($this->data)), $catime);
                 }
             }
         }
+
         return $this->data;
     }
 

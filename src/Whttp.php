@@ -44,7 +44,7 @@ class Whttp extends WhttpClass
         'left',       // (string)        截取返回Body指定左边字符
         'core',       // (string,string) 截取返回Body指定中间字符
         'right',      // (string)        截取返回Body指定右边字符
-        'cache',      // (integer,object)设置缓存时间(秒)采用的是File方式缓存|第二个参数可空,是可以传入框架缓存驱动
+        'cache',      // (integer,object)缓存时间(秒)默认是File方式缓存|第二个参数可空,是可以传入框架缓存驱动(thinkphp)
         'writefunc',  // (callable)      回调方法,可以干预实时获取的内容,有2个参数 function($ch,$exec){}
     );
 

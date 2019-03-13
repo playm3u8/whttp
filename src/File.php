@@ -9,12 +9,11 @@
 namespace PL;
 use Exception;
 
-
 /**
  * 文件类型缓存类
  * @author    liu21st <liu21st@gmail.com>
  */
-class Cache
+class File
 {
     protected $options = array(
         'expire'        => 60,
