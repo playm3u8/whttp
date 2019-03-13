@@ -259,7 +259,7 @@ class WhttpClass
             } else {
                 // (自带file缓存)
                 $cache  = new File();
-                $catime = $this->method['cache'][0];
+                $catime = $this->method['cache'];
             }
             // 判断是否存在
             if ($cache->has($cacid)) {
@@ -303,7 +303,7 @@ class WhttpClass
 
         // 缓存写入处理
         if (!empty($this->method['cache'])) {
-            if (gettype($this->method['cache']) != 'integer') {
+            if (gettype($catime) != 'integer') {
                 throw new Exception("缓存时间设置有误");
             }
             // 判断是否存在
