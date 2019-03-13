@@ -93,7 +93,7 @@ class WhttpClass
         $return = $this->send();
         // 没有直接返回
         if(!$return['headers']) return Null;
-        return Whttp::fast($return, "headers.State.StatusCode");
+        return fast($return, "headers.State.StatusCode");
     }
 
     /**
@@ -107,7 +107,7 @@ class WhttpClass
         $return = $this->send();
         // 没有直接返回
         if(!$return['headers']) return Null;
-        return Whttp::fast($return, "headers.".$name);
+        return fast($return, "headers.".$name);
     }
 
     /**
@@ -120,7 +120,7 @@ class WhttpClass
         $return = $this->send();
         // 没有直接返回
         if(!$return['body']) return Null;
-        return Whttp::fast($return, "body");
+        return fast($return, "body");
     }
 
     /**
@@ -133,7 +133,7 @@ class WhttpClass
         $return = $this->send();
         // 没有直接返回
         if(!$return['info']) return Null;
-        return Whttp::fast($return, "info.".$name);
+        return fast($return, "info.".$name);
     }
 
     /**
@@ -146,7 +146,7 @@ class WhttpClass
         $return = $this->send();
         // 没有直接返回
         if($return['body']) return Null;
-        return Whttp::fast($return, "error");
+        return fast($return, "error");
     }
 
     /**
@@ -165,7 +165,7 @@ class WhttpClass
         if(empty($name)){
             return $data;
         }
-        return Whttp::fast($data, $name);
+        return fast($data, $name);
     }
 
     /**
@@ -180,7 +180,7 @@ class WhttpClass
         // 没有直接返回
         if(!$return) return Null;
         // 编码JSON
-        return Whttp::fast($return, $name);
+        return fast($return, $name);
     }
 
     /**
@@ -450,7 +450,7 @@ class WhttpClass
             'User-Agent: '.$_SERVER['HTTP_USER_AGENT']
         );
         // 合并请求头
-        $this->default_header = Whttp::arrUp($this->default_header, $User_Agent);
+        $this->default_header = arrUp($this->default_header, $User_Agent);
         // 处理多批量URL
         if (!$out) return array();
         if (gettype($out['url']) == 'array') {
@@ -490,7 +490,7 @@ class WhttpClass
                 // 默认请求来路
                 CURLOPT_REFERER        => empty($out['referer'])? $url : $out['referer'],
                 // 默认请求头
-                CURLOPT_HTTPHEADER     => Whttp::arrUp($this->default_header, empty($out['header'])? array():$out['header']),
+                CURLOPT_HTTPHEADER     => arrUp($this->default_header, empty($out['header'])? array():$out['header']),
             );
             // 处理GET地址
             if ($out['method'] == 'GET') {
@@ -546,7 +546,7 @@ class WhttpClass
                 } else {
                     throw new Exception("伪装IP不能为空哦");
                 }
-                $options[CURLOPT_HTTPHEADER] = Whttp::arrUp($options[CURLOPT_HTTPHEADER],array(
+                $options[CURLOPT_HTTPHEADER] = arrUp($options[CURLOPT_HTTPHEADER],array(
                     'Client-IP: ' . $string,
                     'X-Forwarded-For: ' . $string
                 ));
@@ -638,7 +638,7 @@ class WhttpClass
 
                 } else {
 
-                    if (!$down = Whttp::download($data['body'],$name,$this->method['fp_path'])) 
+                    if (!$down = download($data['body'],$name,$this->method['fp_path'])) 
                     {
                         $data['download']['state'] = false;
                         $data['download']['path']  = "批量下载失败";
@@ -677,13 +677,13 @@ class WhttpClass
             // 过滤字符
             if (!empty($this->method['right'])) {
                 // 取右
-                $data['body'] = Whttp::_right($data['body'], $this->method['right']);
+                $data['body'] = right($data['body'], $this->method['right']);
             } elseif (!empty($this->method['left'])) {
                 // 取左
-                $data['body'] = Whttp::_left($data['body'], $this->method['left']);
+                $data['body'] = left($data['body'], $this->method['left']);
             } elseif (!empty($this->method['core'])) {
                 // 取中
-                $data['body'] = Whttp::_core($data['body'], $this->method['core'][0], $this->method['core'][1]);
+                $data['body'] = core($data['body'], $this->method['core'][0], $this->method['core'][1]);
             }
         }
         return $data;
