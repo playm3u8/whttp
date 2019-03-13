@@ -1,7 +1,7 @@
 # Whttp
-*PHP非阻塞并发HTTP请求类(采集爬虫专用)
-Author: laoge <3385168058@qq.com>
-下面是详细使用方法*
+# PHP非阻塞并发HTTP请求类(采集爬虫专用)
+# Author: laoge <3385168058@qq.com>
+*下面是详细使用方法*
 ```
 $ composer require playm3u8/whttp
 ```
