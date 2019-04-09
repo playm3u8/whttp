@@ -466,11 +466,13 @@ class WhttpClass
     private function config($out) 
     {
         // 获取用户浏览器标示
-        $User_Agent = array(
-            'User-Agent: '.$_SERVER['HTTP_USER_AGENT']
-        );
-        // 合并请求头
-        $this->default_header = arrUp($this->default_header, $User_Agent);
+        if (!empty($_SERVER['HTTP_USER_AGENT'])){
+            $User_Agent = array(
+                'User-Agent: '.$_SERVER['HTTP_USER_AGENT']
+            );
+            // 合并请求头
+            $this->default_header = arrUp($this->default_header, $User_Agent);
+        }
         // 处理多批量URL
         if (!$out) return array();
         if (gettype($out['url']) == 'array') {
