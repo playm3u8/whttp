@@ -35,14 +35,14 @@ if (!function_exists('left')) {
      * @param  string $right_str 右边字符
      * @return string            结果字符
      */
-    function left($str, $right_str, $mode=false)
+    function left($str, $right_str)
     {
         $pos = strpos( $str, $right_str);
         if($pos === false){
-            return ($mode)? $str: null;
+            return null;
         }
         if (!$string = substr($str, 0, $pos)){
-            return ($mode)? $str: null;
+            return null;
         }else{
             return $string;
         }
@@ -57,15 +57,15 @@ if (!function_exists('core')) {
      * @param  string $rightStr 右边字符串
      * @return string           结果字符
      */
-    function core($str, $leftStr, $rightStr, $mode=false)
+    function core($str, $leftStr, $rightStr)
     {
         $left = strpos($str, $leftStr);
         if ($left === false) {
-            return ($mode)? $str: null;
+            return null;
         }
         $right = strpos($str, $rightStr, $left + strlen($leftStr));
         if ($left === false or $right === false) {
-            return ($mode)? $str: null;
+            return null;
         }
         return substr($str, $left + strlen($leftStr), $right - $left - strlen($leftStr));
     }
@@ -78,11 +78,11 @@ if (!function_exists('right')) {
      * @param  string $left_str 左边字符
      * @return string           结果字符
      */
-    function right($str, $left_str, $mode=false)
+    function right($str, $left_str)
     {
         $pos = strrpos($str, $left_str);
         if($pos === false){
-            return ($mode)? $str: null;
+            return null;
         }else{
             return substr($str, $pos + strlen($left_str));
         }
