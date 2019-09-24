@@ -100,7 +100,7 @@ class WhttpClass
      * @param  string $name 名称(.号分割)
      * @return string       
      */
-    public function getHeaders ($name="") 
+    public function getHeaders (string $name="") 
     {
         // 发送请求
         $return = $this->send();
@@ -126,7 +126,7 @@ class WhttpClass
      * 获取请求信息(不支持并发)
      * @return array
      */
-    public function getInfo($name="") 
+    public function getInfo(string $name="") 
     { 
         // 发送请求
         $return = $this->send();
@@ -153,7 +153,7 @@ class WhttpClass
      * @param  string $name 名称(.号分割)
      * @return array       
      */
-    public function getJson($name="")
+    public function getJson(string $name="")
     {
         // 发送请求
         $return = $this->send();
@@ -172,7 +172,7 @@ class WhttpClass
      * @param  string $name 名称(.号分割)
      * @return array
      */
-    public function getAll($name="")
+    public function getAll(string $name="")
     {
         // 发送请求
         $return = $this->send();
@@ -187,7 +187,7 @@ class WhttpClass
      * 回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
      * @param  callable $callback 回调函数
      */
-    public function getGany($callback) 
+    public function getGany(callable $callback) 
     { 
         $this->callback = $callback;
         // 处理配置信息
