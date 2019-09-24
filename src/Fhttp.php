@@ -120,7 +120,7 @@ class Fhttp
      * 请求地址
      * @param string $url 访问URL
      */
-    public function __construct(string $url)
+    public function __construct($url)
     {
         // 解析URL地址
         $this->parse = $this->parse_urls($url);
@@ -141,7 +141,7 @@ class Fhttp
      * @param  string $value 数据
      * @return $this        
      */
-    public function data(string $value)
+    public function data($value)
     {
         // 检测提交数据
         if (empty($value)) {
@@ -165,7 +165,7 @@ class Fhttp
      * @param  string $value url
      * @return $this
      */
-    public function referer(string $value = "")
+    public function referer($value = "")
     {
         // 设置请求来路
         $this->structure("Referer: " . $value);
@@ -177,7 +177,7 @@ class Fhttp
      * @param  bool   $value 真或假
      * @return $this
      */
-    public function jump(bool $value = false)
+    public function jump($value = false)
     {
         $this->jump = $value;
         return $this;
@@ -220,7 +220,7 @@ class Fhttp
      * @param  array  $value 请求头
      * @return $this        
      */
-    public function header(array $value)
+    public function header($value)
     {
         // 合并更新设置请求头
         if ($value) {
@@ -235,7 +235,7 @@ class Fhttp
      * @param  [type] $str2 后字符
      * @return $this       
      */
-    public function core(string $str1, string $str2)
+    public function core($str1, $str2)
     {
         if (empty($str1) || empty($str2)) {
             die('ERROR: 过滤字符有误');
@@ -252,7 +252,7 @@ class Fhttp
      * @param  string $str 前字符
      * @return $this      
      */
-    public function right(string $str)
+    public function right($str)
     {
         if (empty($str)) {
             die('ERROR: 过滤字符有误');
@@ -266,7 +266,7 @@ class Fhttp
      * @param  string $str 后字符
      * @return $this      
      */
-    public function left(string $str)
+    public function left($str)
     {
         if (empty($str)) {
             die('ERROR: 过滤字符有误');
@@ -291,7 +291,7 @@ class Fhttp
      * @param  string $value Cookie
      * @return $this        
      */
-    public function cookie(string $value="")
+    public function cookie($value="")
     {
         if(!empty($value)){
             // 设置请求来路
@@ -305,7 +305,7 @@ class Fhttp
      * @param  string $value 代理IP
      * @return $this       
      */
-    public function proxy_ip(string $value)
+    public function proxy_ip($value)
     {
         // 检查代理数据
         if (strpos($value, ':') === false) {
@@ -344,7 +344,7 @@ class Fhttp
      * @param  string $value 名称(.号分割)
      * @return array|string
      */
-    public function getJson(string $value="")
+    public function getJson($value="")
     {
         // 获取全部数据
         $return = $this->getAll();
@@ -375,7 +375,7 @@ class Fhttp
      * @param  string $name 名称(.号分割)
      * @return string|array       
      */
-    public function getHeaders(string $name="")
+    public function getHeaders($name="")
     {
         // 变量赋值
         $this->no_body = true;
@@ -389,7 +389,7 @@ class Fhttp
      * @param  bool|boolean $initial 是否需要初始数据
      * @return sring|array                
      */
-    public function getAll(bool $initial=false)
+    public function getAll($initial=false)
     {
         $return = array(
             'body'    => "",
@@ -600,7 +600,7 @@ class Fhttp
      * @param  string $url URL
      * @return array
      */
-    private function parse_urls(string $url)
+    private function parse_urls($url)
     {
         // 解析URL
         $array = parse_url($url);
