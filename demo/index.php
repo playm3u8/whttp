@@ -11,4 +11,4 @@ if ($http->getError()) {
 } else {
 	$http = $http->getHeaders();
 }
-p($http);
+p($http,true);
