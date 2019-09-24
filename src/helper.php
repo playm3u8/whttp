@@ -131,7 +131,7 @@ if (!function_exists('fast')) {
      * @param  string $strName 配置参数名（.号分割）
      * @return array|string       
      */
-    function fast($data, string $strName="") 
+    function fast($data, $strName="") 
     {
         $strArray = "";
         if (substr($strName, -1) == '.') {

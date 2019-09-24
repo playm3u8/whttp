@@ -489,10 +489,13 @@ class WhttpClass
                 CURLOPT_URL            => $url,
                 // 设置cURL允许执行的最长毫秒数
                 CURLOPT_NOSIGNAL       => true,
-                // 默认2000毫秒
-                CURLOPT_TIMEOUT_MS     => 2000,
+                /** 使用 cURL 下载 MP3 文件是一个对开发人员来说不错的例子，CURLOPT_CONNECTTIMEOUT 可以设置为10秒，标识如果服务器10秒内没有响应，脚本就会断开连接，CURLOPT_TIMEOUT 可以设置为100秒，如果MP3文件100秒内没有下载完成，脚本将会断开连接。
+                需要注意的是：CURLOPT_TIMEOUT 默认为0，意思是永远不会断开链接。所以不设置的话，可能因为链接太慢，会把 HTTP 资源用完。
+                在 WordPress 中，wp_http 类，这两个值是一样的，默认是设置为 5 秒。 */
+                // 请求超时时间
+                CURLOPT_TIMEOUT_MS     => 5000,    // 默认5秒
                 // 尝试连接等待的时间，以毫秒为单位。设置为0，则无限等待
-                CURLOPT_CONNECTTIMEOUT_MS => 2000, // 默认500毫秒
+                CURLOPT_CONNECTTIMEOUT_MS => 5000, // 默认5秒
                 // 设置需要返回请求头信息
                 CURLOPT_HEADER         => empty($out['fp_path'])? true : false,
                 // 设置已文本流方式返回,反则就会直接输出至浏览器显示了

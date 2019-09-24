@@ -30,7 +30,7 @@ class Fhttp
      * 默认请求超时(秒)
      * @var integer
      */
-    private $timeout = 2;
+    private $timeout = 5; // 默认5秒
     
     /**
      * URL解析数据
@@ -97,6 +97,12 @@ class Fhttp
      * @var boolean
      */
     private $no_body  = false;
+
+    /**
+     * 异步默认值
+     * @var boolean
+     */
+    private $async    = false;
     
     /**
      * 默认请求头
@@ -321,6 +327,19 @@ class Fhttp
     }
     
     /**
+     * 设置异步请求
+     * @Author   laoge
+     * @DateTime 2019-09-24
+     * @param    boolean    $value true|false
+     * @return   $this
+     */
+    public function async($value = false)
+    {
+        $this->async = $value;
+        return $this;
+    }
+
+    /**
      * 以数组形式返回
      * @param  string $value 名称(.号分割)
      * @return array|string
@@ -380,9 +399,12 @@ class Fhttp
         );
         // 发送请求
         $this->send();
+        // 异步请求不取结果，这里就直接中断。
+        if ($this->async == true) return $return;
         // 读取数据
         $reponse = Null;
         $info    = stream_get_meta_data($this->hand);
+
         while ((!feof($this->hand)) && (!$info['timed_out']))
         {
             $reponse .= fgets($this->hand, 4096);
@@ -463,7 +485,7 @@ class Fhttp
             }
         }
         // 设置请求方式
-        if ($this->parse['port'] == 443) {
+        if ($this->parse['port'] == 443 || $this->parse['scheme'] == 'https') {
             $this->parse['host'] = "ssl://" . $this->parse['host'];
         }
         // 设置代理请求
@@ -472,7 +494,6 @@ class Fhttp
             $this->parse['port'] = parse_url($this->proxy_ip, PHP_URL_PORT);
         }
         // 连接请求服务器
-        // echo $this->timeout."<br>";
         // 注意：如果你要对建立在套接字基础上的读写操作设置操作时间设置连接时限，
         // 请使用stream_set_timeout()，fsockopen()的连接时限（timeout）的参数仅仅在套接字连接的时候生效。
         $this->hand = fsockopen($this->parse['host'], $this->parse['port'], $errno, $errstr, $this->timeout);
