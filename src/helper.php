@@ -571,6 +571,22 @@ if (!function_exists('top_domain')) {
     }
 }
 
+if (!function_exists('mailCheck')) {
+    /**
+     * 验证邮箱格式是否正确
+     * @param  string  $string    文本
+     * @return bool               结果
+     */
+    function mailCheck($email) {
+        $pattern="/([a-z0-9]*[-_.]?[a-z0-9]+)*@([a-z0-9]*[-_]?[a-z0-9]+)+[.][a-z]{2,3}([.][a-z]{2})?/i";
+        if(preg_match($pattern,$email)){
+            return true;
+        } else{
+            return false;
+        }
+    }
+}
+
 if (!function_exists('autHcode')) {
     /**
      * 动态加密解密
