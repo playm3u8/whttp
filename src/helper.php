@@ -587,6 +587,21 @@ if (!function_exists('mailCheck')) {
     }
 }
 
+if (!function_exists('ejson')) {
+    /**
+     * 格式化输出Json数据,并且停止
+     * @param  Array $json_arr
+     * @return string
+     */
+    function ejson($json_arr)
+    {
+        if (is_array($json_arr)){
+            header('content-type:application/json;charset=utf8');
+            exit(json_encode($json_arr, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES));
+        }
+    }
+}
+
 if (!function_exists('autHcode')) {
     /**
      * 动态加密解密
