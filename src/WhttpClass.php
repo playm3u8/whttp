@@ -310,7 +310,12 @@ class WhttpClass
             if (!$cache->has($cacid)) 
             {
                 // 压缩写入缓存
-                if (empty($this->data['errer']) && $this->data['headers']) {
+                // if (empty($this->data['errer']) && $this->data['headers']) {
+                //     $cache->set($cacid, gzdeflate(serialize($this->data)), $catime);
+                // }
+
+                // 只要不出错，所有数据都加入缓存
+                if (empty($this->data['errer'])) {
                     $cache->set($cacid, gzdeflate(serialize($this->data)), $catime);
                 }
             }
