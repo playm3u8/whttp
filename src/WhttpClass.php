@@ -488,6 +488,17 @@ class WhttpClass
             return array();
         }
         foreach ($urls as $id => $url) {
+            // 处理GET地址
+            if ($out['method'] == 'GET') {
+                if (isset($out['data'])) {
+                    if(is_array($out['data'])){
+                        $url = $url."?".merge_string($out['data']);
+                    } else {
+                        $url = $url."?".$out['data'];
+                    }
+                    unset($out['data']);
+                }
+            }
             // 默认值
             $options = array( 
                 // 请求地址
@@ -522,12 +533,6 @@ class WhttpClass
                 // 默认请求头
                 CURLOPT_HTTPHEADER     => arrUp($this->default_header, empty($out['header'])? array():$out['header']),
             );
-            // 处理GET地址
-            if ($out['method'] == 'GET') {
-                if (isset($out['data'])) {
-                    unset($out['data']);
-                }
-            }
             // 回调处理事件, 开启了exec就不输出了
             if (array_key_exists('writefunc', $out)) {
                 if (is_callable($out['writefunc'])) {
