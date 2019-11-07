@@ -509,9 +509,9 @@ class WhttpClass
                 需要注意的是：CURLOPT_TIMEOUT 默认为0，意思是永远不会断开链接。所以不设置的话，可能因为链接太慢，会把 HTTP 资源用完。
                 在 WordPress 中，wp_http 类，这两个值是一样的，默认是设置为 5 秒。 */
                 // 请求超时时间
-                CURLOPT_TIMEOUT_MS     => 5000,    // 默认5秒
+                CURLOPT_TIMEOUT_MS     => defined("CURL_TIMEOUT_MS")? CURL_TIMEOUT_MS:5000,    // 默认5秒,可以通过常量来统一设置默认
                 // 尝试连接等待的时间，以毫秒为单位。设置为0，则无限等待
-                CURLOPT_CONNECTTIMEOUT_MS => 5000, // 默认5秒
+                CURLOPT_CONNECTTIMEOUT_MS => defined("CURL_CONNECTTIMEOUT_MS")? CURL_CONNECTTIMEOUT_MS:5000, // 默认5秒,可以通过常量来统一设置默认
                 // 设置需要返回请求头信息
                 CURLOPT_HEADER         => empty($out['fp_path'])? true : false,
                 // 设置已文本流方式返回,反则就会直接输出至浏览器显示了
