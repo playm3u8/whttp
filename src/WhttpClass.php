@@ -565,11 +565,16 @@ class WhttpClass
             // 设置连接超时
             if(!empty($out['ctimeout'])) $options[CURLOPT_CONNECTTIMEOUT_MS] = round($out['ctimeout']*1000,0);
             // 设置代理
-            if (empty($out['proxy']) == false) 
-            {
+            if (!empty($out['proxy'])) {
+                // 设置HTTP代理
                 $options[CURLOPT_PROXY] = $out['proxy'];
                 $options[CURLOPT_PROXYAUTH] = CURLAUTH_BASIC;
                 $options[CURLOPT_PROXYTYPE] = CURLPROXY_HTTP;
+            } else if(!empty($out['socks5'])) {
+                // 设置SOCKS5代理
+                $options[CURLOPT_PROXY] = $out['socks5'];
+                $options[CURLOPT_PROXYAUTH] = CURLAUTH_BASIC;
+                $options[CURLOPT_PROXYTYPE] = CURLPROXY_SOCKS5;
             }
             // 设置伪代理
             if (empty($out['fool']) == false) 
