@@ -401,7 +401,7 @@ if (!function_exists('nowtime')) {
     }
 }
 
-if (!function_exists('current_ip')) {
+if (!function_exists('v_dump')) {
     /**
      * 浏览器友好的变量输出
      * @param mixed $var 变量

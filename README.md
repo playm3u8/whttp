@@ -193,7 +193,8 @@ protected static $setlist1 = array(
     'ctimeout',   // (float)         连接超时时间(秒)
     'nobody',     // (bool)          不要body 只返回响应头信息(默认要body)(超快)
     'referer',    // (string)        伪装请求来路
-    'proxy',      // (string)        代理IP
+    'proxy',      // (string)        HTTP代理
+    'socks5',     // (string)        socks5代理
     'fool',       // (string)        伪装用户IP，有些无效
     'utf8',       // (bool)          解码UTF8响应内容(在返回内容乱码的情况下使用) 
     'left',       // (string)        截取返回Body指定左边字符
