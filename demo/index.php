@@ -1,11 +1,11 @@
 <?php
-ini_set("html_errors","On");
-ini_set("display_errors","On");
+// ini_set("html_errors","On");
+// ini_set("display_errors","On");
 require_once dirname(__DIR__)."/autoload.php";
 
 use PL\Whttp;
 
-$http = Whttp::get('https://www.baidu.com')->cache(5)->nobody(true);
+$http = Whttp::get('https://www.baidu.com')->cache(5)->timeout(100)->nobody(true);
 if ($http->getError()) {
 	$http = "error: ".$http->getError();
 } else {

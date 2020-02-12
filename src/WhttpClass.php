@@ -554,10 +554,25 @@ class WhttpClass
             }
             // 设置Cookie
             if(!empty($out['cookie'])) $options[CURLOPT_COOKIE] = $out['cookie'];
-            // 设置请求超时
-            if(!empty($out['timeout'])) $options[CURLOPT_TIMEOUT_MS] = round($out['timeout']*1000,0);
-            // 设置连接超时
-            if(!empty($out['ctimeout'])) $options[CURLOPT_CONNECTTIMEOUT_MS] = round($out['ctimeout']*1000,0);
+            // 设置超时时间
+            if (!empty($out['timeout'])) 
+            {
+                if (gettype($out['timeout']) == 'integer') {
+                    // 设置请求超时
+                    $options[CURLOPT_TIMEOUT_MS] = $out['timeout'];
+                } elseif (gettype($out['timeout']) == 'array') 
+                {
+                    if (!empty($out['timeout'][0])){
+                        // 设置请求超时
+                        $options[CURLOPT_TIMEOUT_MS] = $out['timeout'][0];
+                    }
+                    if (!empty($out['timeout'][1])){
+                        // 设置连接超时
+                        $options[CURLOPT_CONNECTTIMEOUT_MS] = $out['timeout'][1];
+                    }
+
+                }
+            }
             // 设置代理
             if (!empty($out['proxy'])) {
                 // 设置HTTP代理

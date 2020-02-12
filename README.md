@@ -186,22 +186,37 @@ private static $method = array(
  * @var array
  */
 protected static $setlist1 = array(
-    'jump',       // (bool)          跳过重定向(默认会跳过重定向)
-    'header',     // (array)         请求协议头
-    'cookie',     // (string)        请求cookie
-    'timeout',    // (float)         请求超时时间(秒)
-    'ctimeout',   // (float)         连接超时时间(秒)
-    'nobody',     // (bool)          不要body 只返回响应头信息(默认要body)(超快)
-    'referer',    // (string)        伪装请求来路
-    'proxy',      // (string)        HTTP代理
-    'socks5',     // (string)        socks5代理
-    'fool',       // (string)        伪装用户IP，有些无效
-    'utf8',       // (bool)          解码UTF8响应内容(在返回内容乱码的情况下使用) 
-    'left',       // (string)        截取返回Body指定左边字符
-    'core',       // (string,string) 截取返回Body指定中间字符
-    'right',      // (string)        截取返回Body指定右边字符
-    'cache',      // (integer,object)缓存时间(秒)默认是File方式缓存|第二个参数可空,是可以传入框架缓存驱动(thinkphp)
-    'writefunc',  // (callable)      回调方法,可以干预实时获取的内容,有2个参数 function($ch,$exec){}
+    'jump',      // (bool)          
+    // 跳过重定向(默认会跳过重定向)
+    'header',    // (array)         
+    // 请求协议头
+    'cookie',    // (string)        
+    // 请求cookie
+    'timeout',   // (integer,integer|array)
+    // 默认超时时间都是5000毫秒也就是5秒
+    // 超时时间(参数1响应超时、参数2连接超时)默认设置一个参数是请求超时，支持数组(毫秒)
+    'nobody',    // (bool)          
+    // 不要body 只返回响应头信息(默认要body)(超快)
+    'referer',   // (string)        
+    // 伪装请求来路
+    'proxy',     // (string)        
+    // HTTP代理
+    'socks5',    // (string)        
+    // socks5代理
+    'fool',      // (string)        
+    // 伪装用户IP，有些无效
+    'utf8',      // (bool)          
+    // 解码UTF8响应内容(在返回内容乱码的情况下使用) 
+    'left',      // (string)        
+    // 截取返回Body指定左边字符
+    'core',      // (string,string) 
+    // 截取返回Body指定中间字符
+    'right',     // (string)        
+    // 截取返回Body指定右边字符
+    'cache',     // (integer|array) 
+    // 缓存配置(integer)或(array如:['host'=>'','pass'=>'','expire'=>'']) 
+    'writefunc', // (callable)      
+    // 回调方法,可以干预实时获取的内容,有2个参数 function($ch,$exec){}
 );
 ```
 *返回方法说明*
