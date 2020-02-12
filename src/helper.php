@@ -8,14 +8,6 @@
 // +----------------------------------------------------------------------
 use PL\Fhttp;
 
-// 框架识别
-if (defined('THINK_PATH')) 
-{
-    define('PL_RUNTIME_PATH', RUNTIME_PATH);
-} else {
-    define('PL_RUNTIME_PATH', dirname(__DIR__).'/runtime/');
-}
-
 if (!function_exists('fhttp')) {
     /**
      * 网络请求 (fsockopen)

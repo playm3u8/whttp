@@ -237,38 +237,41 @@ class WhttpClass
      */
     private function single($options) 
     {
-        $cacid = Null;
         // 数据存在就直接返回
         if($this->data) return $this->data;
+    //*********************************************
         // 缓存ID标示
         $cacid = $this->getCacheID($options[0]);
-
         // 识别缓存驱动
-        if (!empty($this->method['cache'])) 
-        {
-            if (is_array($this->method['cache'])) {
-                // (thinkphp缓存）
-                if (gettype($this->method['cache'][0]) == 'object')
-                {
-                    $cache  = $this->method['cache'][0];
-                    $catime = $this->method['cache'][1];
-                } else {
-                    $cache  = $this->method['cache'][1];
-                    $catime = $this->method['cache'][0];
-                }
+        $ReINFO = $this->method['cache'];
+        if (!empty($ReINFO)) {
+            // 默认Redis配置
+            $default = array(
+                'host'   => '127.0.0.1',
+                'pass'   => '',
+                'expire' => 60,
+            );
+            if (gettype($ReINFO) == 'integer') {
+                // 赋值有效期
+                $default['expire'] = $ReINFO;
+
+            } elseif(gettype($ReINFO) == 'array'){
+                $default['host']   = empty($ReINFO['host'])? $default['host']:$ReINFO['host'];
+                $default['pass']   = empty($ReINFO['pass'])? $default['pass']:$ReINFO['pass'];
+                $default['expire'] = empty($ReINFO['expire'])? $default['expire']:$ReINFO['expire'];
             } else {
-                // (自带file缓存)
-                $cache  = new File();
-                $catime = $this->method['cache'];
+                throw new Exception("缓存配置有误");
             }
+            // 实例化Redis
+            $predis = new Predis($default);
             // 判断是否存在
-            if ($cache->has($cacid)) {
+            if ($predis->has($cacid)) {
                 // 获取缓存解压数据
-                $this->data = unserialize(gzinflate($cache->get($cacid)));
+                $this->data = unserialize(gzinflate($predis->get($cacid)));
                 return $this->data;
             }
         }
-
+    //********************************************
         // 初始化
         $ch = curl_init();
         // 临时文件
@@ -300,27 +303,18 @@ class WhttpClass
         curl_close($ch);
         // 删除无用数据
         unset($this->data['exec']);
-
+    //*********************************************
         // 缓存写入处理
-        if (!empty($this->method['cache'])) {
-            if (gettype($catime) != 'integer') {
-                throw new Exception("缓存时间设置有误");
-            }
+        if (!empty($ReINFO)) {
             // 判断是否存在
-            if (!$cache->has($cacid)) 
-            {
-                // 压缩写入缓存
-                // if (empty($this->data['errer']) && $this->data['headers']) {
-                //     $cache->set($cacid, gzdeflate(serialize($this->data)), $catime);
-                // }
-
+            if (!$predis->has($cacid)) {
                 // 只要不出错，所有数据都加入缓存
                 if (empty($this->data['errer'])) {
-                    $cache->set($cacid, gzdeflate(serialize($this->data)), $catime);
+                    $predis->set($cacid, gzdeflate(serialize($this->data)), $default['expire']);
                 }
             }
         }
-
+    //*********************************************
         return $this->data;
     }
 
