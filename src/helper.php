@@ -7,6 +7,7 @@
 // | Author: laoge <3385168058@qq.com>
 // +----------------------------------------------------------------------
 use PL\Fhttp;
+use PL\Whttp;
 
 if (!function_exists('fhttp')) {
     /**
@@ -17,6 +18,85 @@ if (!function_exists('fhttp')) {
     function fhttp($url)
     {
         return (new Fhttp($url));
+    }
+}
+
+if (!function_exists('get')) {
+    /**
+     * 网络请求get
+     * @Author   laoge
+     * @DateTime 2020-02-17
+     * @param    string|array     $url 请求url
+     * @param    string|array     $str 提交参数[可空]
+     * @return   object          
+     */
+    function get($url, $str=null)
+    {
+        if ($str == null) {
+            return Whttp::get($url);
+        } else {
+            return Whttp::get($url, $str);
+        }
+    }
+}
+
+if (!function_exists('post')) {
+    /**
+     * 网络请求post
+     * @Author   laoge
+     * @DateTime 2020-02-17
+     * @param    string|array     $url 请求url
+     * @param    string|array     $str 提交参数
+     * @return   object          
+     */
+    function post($url, $str)
+    {
+        return Whttp::post($url, $str);
+    }
+}
+
+if (!function_exists('put')) {
+    /**
+     * 网络请求put
+     * @Author   laoge
+     * @DateTime 2020-02-17
+     * @param    string|array     $url 请求url
+     * @param    string|array     $str 提交参数
+     * @return   object          
+     */
+    function put($url, $str)
+    {
+        return Whttp::put($url, $str);
+    }
+}
+
+if (!function_exists('patch')) {
+    /**
+     * 网络请求patch
+     * @Author   laoge
+     * @DateTime 2020-02-17
+     * @param    string|array     $url 请求url
+     * @param    string|array     $str 提交参数
+     * @return   object          
+     */
+    function patch($url, $str)
+    {
+        return Whttp::patch($url, $str);
+    }
+}
+
+if (!function_exists('delete')) {
+    /**
+     * 网络请求delete
+     * @Author   laoge
+     * @DateTime 2020-02-17
+     * @param    string|array     $url 请求url
+     * @param    string|array     $str 提交参数
+     * @return   object          
+     */
+    function delete($url, $str)
+    {
+        return Whttp::delete($url, $str);
     }
 }
 

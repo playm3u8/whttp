@@ -19,7 +19,7 @@ class Whttp extends WhttpClass
      * @var array
      */
     private static $method = array(
-        'GET',        // get(string|array)
+        'GET',        // get(string|array, string|array)
         'POST',       // post(string|array, string|array)
         'PUT',        // put(string|array, string|array)
         'PATCH',      // patch(string|array, string|array)
