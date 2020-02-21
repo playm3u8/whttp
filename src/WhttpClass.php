@@ -597,6 +597,8 @@ class WhttpClass
                     }
 
                 }
+            } else {
+                throw new Exception("timeout cannot be empty.");
             }
             // 设置代理
             if (!empty($out['proxy'])) {
@@ -618,7 +620,7 @@ class WhttpClass
                 } else if (gettype($out['fool']) == 'string') {
                     $string = $out['fool'];
                 } else {
-                    throw new Exception("伪装IP不能为空哦");
+                    throw new Exception("fool cannot be empty.");
                 }
                 $options[CURLOPT_HTTPHEADER] = arrUp($options[CURLOPT_HTTPHEADER],array(
                     'Client-IP: ' . $string,
