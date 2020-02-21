@@ -31,8 +31,8 @@ class Whttp extends WhttpClass
      * @var array
      */
     protected static $setlist1 = array(
-        'jump',      // (bool)          
-        // 跳过重定向(默认会跳过重定向)
+        'jump',      // (bool)        
+        // 跳过重定向(默认会跳过重定向)(可空)
         'header',    // (array)         
         // 请求协议头
         'cookie',    // (string)        
@@ -40,8 +40,8 @@ class Whttp extends WhttpClass
         'timeout',   // (integer,integer|array)
         // 默认超时时间都是5000毫秒也就是5秒
         // 超时时间(参数1响应超时、参数2连接超时)默认设置一个参数是请求超时，支持数组(毫秒)
-        'nobody',    // (bool)          
-        // 不要body 只返回响应头信息(默认要body)(超快)
+        'nobody',    // (bool)            
+        // 不要body 只返回响应头信息(默认要body)(超快)(可空)
         'referer',   // (string)        
         // 伪装请求来路
         'proxy',     // (string)        
@@ -50,8 +50,8 @@ class Whttp extends WhttpClass
         // socks5代理
         'fool',      // (string)        
         // 伪装用户IP，有些无效
-        'utf8',      // (bool)          
-        // 解码UTF8响应内容(在返回内容乱码的情况下使用) 
+        'utf8',      // (bool)             
+        // 解码UTF8响应内容(在返回内容乱码的情况下使用)(可空) 
         'left',      // (string)        
         // 截取返回Body指定左边字符
         'core',      // (string,string) 

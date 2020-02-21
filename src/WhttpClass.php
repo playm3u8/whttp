@@ -73,7 +73,11 @@ class WhttpClass
                 if (count($params) == 2 && !is_null($params[1])) {
                     $this->method[strtolower($func)] = array($params[0], $params[1]);
                 } else {
-                    $this->method[strtolower($func)] = empty($params[0])? false : $params[0];
+                    if (is_null($params[0])) {
+                        $this->method[strtolower($func)] = null;
+                    } else {
+                        $this->method[strtolower($func)] = $params[0];
+                    }
                 }
             } else {
                 throw new Exception("$func 好像没有这个方法");
@@ -212,6 +216,13 @@ class WhttpClass
         $return = $this->send($this->config($this->method));
         return $return;
     }
+
+
+
+
+
+
+
 
     /**
      * 发送请求
@@ -514,10 +525,6 @@ class WhttpClass
                 CURLOPT_CUSTOMREQUEST  => $out['method'],
                 // 指定最多的 HTTP 重定向次数
                 CURLOPT_MAXREDIRS      => 4,
-                // 禁止重定向，默认重定向直接跳过
-                CURLOPT_FOLLOWLOCATION => array_key_exists('jump', $out)? false : true,
-                // 设置要请求头和内容一起返回，反则只会返回请求头，这样好处就是请求很快得到请求头的信息
-                CURLOPT_NOBODY         => array_key_exists('nobody', $out)? true : false,
                 // 获取远程文档中的修改时间信息
                 CURLOPT_FILETIME       => true,
                 // 根据 Location: 重定向时，自动设置 header 中的Referer:信息
@@ -527,6 +534,24 @@ class WhttpClass
                 // 默认请求头
                 CURLOPT_HTTPHEADER     => arrUp($this->default_header, empty($out['header'])? array():$out['header']),
             );
+            // 禁止重定向，默认重定向直接跳过
+            if(array_key_exists('jump', $out)) {
+                if (is_null($out['jump']) || $out['jump']) 
+                {
+                    $options[CURLOPT_FOLLOWLOCATION] = false;
+                } else {
+                    $options[CURLOPT_FOLLOWLOCATION] = true;
+                }
+            } else {
+                $options[CURLOPT_FOLLOWLOCATION] = true;
+            }
+            // 设置要请求头和内容一起返回，反则只会返回请求头，这样好处就是请求很快得到请求头的信息
+            if(array_key_exists('nobody', $out)) {
+                if (is_null($out['nobody']) || $out['nobody']) 
+                {
+                    $options[CURLOPT_NOBODY] = true;
+                }
+            }
             // 回调处理事件, 开启了exec就不输出了
             if (array_key_exists('writefunc', $out)) {
                 if (is_callable($out['writefunc'])) {
@@ -720,8 +745,12 @@ class WhttpClass
         }
         // 过滤字符串
         if (!empty($data['body'])) {
-            if (array_key_exists('utf8', $this->method)) {
-                $data['body'] = mb_convert_encoding($data['body'], 'utf-8', 'GBK,UTF-8,ASCII');
+            // UTF8编码处理
+            if(array_key_exists('utf8', $this->method)) {
+                if (is_null($this->method['utf8']) || $this->method['utf8']) 
+                {
+                    $data['body'] = mb_convert_encoding($data['body'],'utf-8','GBK,UTF-8,ASCII');
+                }
             }
             // 过滤字符
             if (!empty($this->method['right'])) {

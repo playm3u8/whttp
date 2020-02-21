@@ -14,7 +14,7 @@ if ($http->getError()) {
 p($http, true);
 */
 
-$http = Whttp::get('https://www.baidu.com')->timeout(200)->nobody(true);
+$http = Whttp::get('http://www.mvgao.com')->timeout(200);
 if ($http->getError()) {
 	$http = "error: ".$http->getError();
 } else {
