@@ -510,14 +510,14 @@ class WhttpClass
                 CURLOPT_HEADER         => empty($out['fp_path'])? true : false,
                 // 设置已文本流方式返回,反则就会直接输出至浏览器显示了
                 CURLOPT_RETURNTRANSFER => true,
-                // 设置要请求头和内容一起返回，反则只会返回请求头，这样好处就是请求很快得到请求头的信息
-                CURLOPT_NOBODY         => empty($out['nobody'])? false : true,
                 // 设置请求方式'GET,POST','PUT','PATCH','DELETE'
                 CURLOPT_CUSTOMREQUEST  => $out['method'],
-                // 默认重定向直接跳过
-                CURLOPT_FOLLOWLOCATION => array_key_exists('jump', $out)? $out['jump']:true,
                 // 指定最多的 HTTP 重定向次数
                 CURLOPT_MAXREDIRS      => 4,
+                // 禁止重定向，默认重定向直接跳过
+                CURLOPT_FOLLOWLOCATION => array_key_exists('jump', $out)? false : true,
+                // 设置要请求头和内容一起返回，反则只会返回请求头，这样好处就是请求很快得到请求头的信息
+                CURLOPT_NOBODY         => array_key_exists('nobody', $out)? true : false,
                 // 获取远程文档中的修改时间信息
                 CURLOPT_FILETIME       => true,
                 // 根据 Location: 重定向时，自动设置 header 中的Referer:信息
@@ -720,7 +720,7 @@ class WhttpClass
         }
         // 过滤字符串
         if (!empty($data['body'])) {
-            if (isset($this->method['utf8']) && $this->method['utf8'] == true) {
+            if (array_key_exists('utf8', $this->method)) {
                 $data['body'] = mb_convert_encoding($data['body'], 'utf-8', 'GBK,UTF-8,ASCII');
             }
             // 过滤字符
