@@ -580,8 +580,12 @@ class WhttpClass
             // 设置Cookie
             if(!empty($out['cookie'])) $options[CURLOPT_COOKIE] = $out['cookie'];
             // 设置超时时间
-            if (!empty($out['timeout'])) 
+            if(array_key_exists('timeout', $out))
             {
+                if (is_null($out['timeout'])) 
+                {
+                    throw new Exception("Timeout cannot be empty.");
+                }
                 if (gettype($out['timeout']) == 'integer') {
                     // 设置请求超时
                     $options[CURLOPT_TIMEOUT_MS] = $out['timeout'];
@@ -595,10 +599,7 @@ class WhttpClass
                         // 设置连接超时
                         $options[CURLOPT_CONNECTTIMEOUT_MS] = $out['timeout'][1];
                     }
-
                 }
-            } else {
-                throw new Exception("Timeout cannot be empty.");
             }
             // 设置代理
             if (!empty($out['proxy'])) {
