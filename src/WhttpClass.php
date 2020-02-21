@@ -80,7 +80,7 @@ class WhttpClass
                     }
                 }
             } else {
-                throw new Exception("$func 好像没有这个方法");
+                throw new Exception('There seems to be no "'.$func.'" member.');
             }
         }
         return $this;
@@ -197,7 +197,7 @@ class WhttpClass
         // 处理配置信息
         $options = $this->config($this->method);
         if (count($options) == 1) {
-            throw new Exception("不支持单URL请求");
+            throw new Exception("Single URL request is not supported.");
         }
         return $this->send($options); 
     }
@@ -271,7 +271,7 @@ class WhttpClass
                 $default['pass']   = empty($ReINFO['pass'])? $default['pass']:$ReINFO['pass'];
                 $default['expire'] = empty($ReINFO['expire'])? $default['expire']:$ReINFO['expire'];
             } else {
-                throw new Exception("缓存配置有误");
+                throw new Exception("Cache configuration error.");
             }
             // 实例化Redis
             $predis = new Predis($default);
@@ -598,7 +598,7 @@ class WhttpClass
 
                 }
             } else {
-                throw new Exception("timeout cannot be empty.");
+                throw new Exception("Timeout cannot be empty.");
             }
             // 设置代理
             if (!empty($out['proxy'])) {
@@ -620,7 +620,7 @@ class WhttpClass
                 } else if (gettype($out['fool']) == 'string') {
                     $string = $out['fool'];
                 } else {
-                    throw new Exception("fool cannot be empty.");
+                    throw new Exception("Fool cannot be empty.");
                 }
                 $options[CURLOPT_HTTPHEADER] = arrUp($options[CURLOPT_HTTPHEADER],array(
                     'Client-IP: ' . $string,

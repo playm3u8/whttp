@@ -143,10 +143,10 @@ class Whttp extends WhttpClass
                 } else if (count($params) == 2) {
                     return $class->method($func)->url($params[0])->data($params[1]);
                 } else {
-                    throw new Exception("$func 参数有误");
+                    throw new Exception("$func wrong parameter");
                 }
             } else {
-                throw new Exception("$func 好像没有这个方法");
+                throw new Exception('There seems to be no "'.$func.'" member.');
             }
         }
     }
