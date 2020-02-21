@@ -150,6 +150,21 @@ if ($http->getError()) {
 }
 p($http,true);
 ```
+*9. 上传文件*
+```php
+$path = 'qrcode-viewfile.png';
+$data = [
+  'id'   => 'WU_FILE_0',
+  'name' => 'qrcode-viewfile.png',
+  'type' => 'image/png',
+  'lastModifiedDate' => date('r',filemtime($path)).' (中国标准时间)',
+  'size' => filesize($path),
+  'file' => new CURLFile($path),
+];
+$http = Whttp::post('http://www.wwei.cn/qrcode-fileupload.html?op=index_jiema', $data);
+$http = $http->header(['Access-Sign: *','Origin: http://www.wwei.cn']);
+p($http->getJson(), true);
+```
 *10. 过程干预*
 ```php
 $urls = 'https://www.baidu.com';
