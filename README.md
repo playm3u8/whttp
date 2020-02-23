@@ -120,7 +120,7 @@ $urls = array(
 );
 Whttp::get($urls)->getGany(function($data){
 	if($data['error']){
-		echo "error: ".$http->getError()."<br>";
+		echo "error: ".$data['error']."<br>";
 	} else {
 		// 不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
 		p($data);

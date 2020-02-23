@@ -230,12 +230,18 @@ class WhttpClass
      */
     private function send($options=null) 
     {
+        // 数据存在就直接返回
+        if($this->data) return $this->data;
         // 处理配置信息
         $options = ($options)? $options : $this->config($this->method);
         if (count($options) == 1) {
             // 单一请求
             return $this->single($options);
         } elseif (count($options) > 1) {
+            // 判断是否调用了getGany方法
+            if ($this->callback == Null) {
+                throw new Exception('Please use the "getGany" method.');
+            }
             // 批量请求
             return $this->multi($options);
         }
@@ -248,10 +254,8 @@ class WhttpClass
      */
     private function single($options) 
     {
-        // 数据存在就直接返回
-        if($this->data) return $this->data;
-    //*********************************************
         // 缓存ID标示
+    //*********************************************
         $cacid = $this->getCacheID($options[0]);
         // 识别缓存驱动
         $ReINFO = $this->method['cache'];
