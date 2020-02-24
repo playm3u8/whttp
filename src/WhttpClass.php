@@ -262,9 +262,11 @@ class WhttpClass
         if (!empty($ReINFO)) {
             // 默认Redis配置
             $default = array(
-                'host'   => '127.0.0.1',
-                'pass'   => '',
-                'expire' => 60,
+                'host'    => '127.0.0.1',
+                'pass'    => '',
+                'expire'  => 60,
+                'count'   => 5,  // 允许超时请求次数
+                'overtimedue' => 60, // 超时请求高于次数设置的缓存时间（秒）
             );
             if (gettype($ReINFO) == 'integer') {
                 // 赋值有效期
@@ -324,17 +326,30 @@ class WhttpClass
         // 删除无用数据
         unset($this->data['exec']);
         // 只要不出错，所有数据都加入缓存
-        if (empty($this->data['error'])) {
+        // 连续请求超时次数高于设定次数将进入缓存
+        $count         = $default['count'];   // 次
+        $overtimedue   = $default['overtimedue']; // 秒
+        $curl_error_id = "curl_error_".$cacid;
+        if (empty($this->data['error']) || $predis->get($curl_error_id) >= $count-1) {
             // 缓存写入处理
             if (!empty($ReINFO)) {
                 // 判断是否存在
                 if (!$predis->has($cacid)) {
+                    // 设置了超时次数限制就走限制的缓存时间
+                    if ($overtimedue > 0) $default['expire'] = $overtimedue;
                     $predis->set($cacid, gzdeflate(serialize($this->data)), $default['expire']);
+                    // 清除记录
+                    if ($predis->has($curl_error_id)) $predis->rm($curl_error_id);
                 }
             }
         } else {
-            // 上面的代码还可以写成，如果连续10次火更多次获取超时就直接进入到错误缓存。防止服务器在大批量请求超时导致服务器堵塞卡死。超时的频率可以通过参数来设置。
-            // 设置错误缓存可以把缓存的ID 加一个前缀，方便批量清除错误的缓存
+
+            if (strpos($this->data['error'], "tion timed") !== false){
+                // 请求超时记录一次
+                if ($count > 0){
+                    $predis->increment($curl_error_id);
+                }
+            }
         }
         return $this->data;
     }

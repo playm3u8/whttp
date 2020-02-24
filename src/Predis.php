@@ -53,8 +53,8 @@ class Predis {
      * 删除一条数据key
      * @param string $key 删除KEY的名称
      */
-    public function del($key) {
-        return $this->redis->delete($key);
+    public function rm($key) {
+        return $this->redis->del($key);
     }
 
     /**
