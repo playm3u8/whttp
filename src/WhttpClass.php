@@ -72,6 +72,8 @@ class WhttpClass
             if (in_array($func, Whttp::$setlist1) || in_array($func, $this->setlist2)) {
                 if (count($params) == 2 && !is_null($params[1])) {
                     $this->method[strtolower($func)] = array($params[0], $params[1]);
+                } elseif(count($params) > 2) {
+                    throw new Exception('"'.$func.'" Too many parameters passed.');
                 } else {
                     if (is_null($params[0])) {
                         $this->method[strtolower($func)] = null;
@@ -208,21 +210,20 @@ class WhttpClass
      * @param  string $path 保存目录
      * @return string       
      */
-    public function getDownload($name=null, $path=null)
+    public function getDownload($name=null, $path)
     {
         $this->method['fp_name'] = $name;
-        $this->method['fp_path'] = empty($path)? PL_RUNTIME_PATH.'file/' : $path;
+        // 检查保存路径的完整性
+        if (empty($path)) {
+            throw new Exception("Save file path cannot be empty.");
+        } elseif(substr($path, -1) != "/") {
+            $path = $path."/";
+        }
+        $this->method['fp_path'] = $path;
         // 发送请求
         $return = $this->send($this->config($this->method));
         return $return;
     }
-
-
-
-
-
-
-
 
     /**
      * 发送请求
@@ -255,7 +256,6 @@ class WhttpClass
     private function single($options) 
     {
         // 缓存ID标示
-    //*********************************************
         $cacid = $this->getCacheID($options[0]);
         // 识别缓存驱动
         $ReINFO = $this->method['cache'];
@@ -271,9 +271,15 @@ class WhttpClass
                 $default['expire'] = $ReINFO;
 
             } elseif(gettype($ReINFO) == 'array'){
-                $default['host']   = empty($ReINFO['host'])? $default['host']:$ReINFO['host'];
-                $default['pass']   = empty($ReINFO['pass'])? $default['pass']:$ReINFO['pass'];
-                $default['expire'] = empty($ReINFO['expire'])? $default['expire']:$ReINFO['expire'];
+
+                if (array_key_exists('host', $ReINFO) && array_key_exists('pass', $ReINFO) && array_key_exists('expire', $ReINFO)) {
+                    $default['host']   = empty($ReINFO['host'])? $default['host']:$ReINFO['host'];
+                    $default['pass']   = empty($ReINFO['pass'])? $default['pass']:$ReINFO['pass'];
+                    $default['expire'] = empty($ReINFO['expire'])? $default['expire']:$ReINFO['expire'];
+                } else {
+                    throw new Exception("Cache configuration error.");
+                }
+
             } else {
                 throw new Exception("Cache configuration error.");
             }
@@ -286,7 +292,6 @@ class WhttpClass
                 return $this->data;
             }
         }
-    //********************************************
         // 初始化
         $ch = curl_init();
         // 临时文件
@@ -318,18 +323,17 @@ class WhttpClass
         curl_close($ch);
         // 删除无用数据
         unset($this->data['exec']);
-    //*********************************************
-        // 缓存写入处理
-        if (!empty($ReINFO)) {
-            // 判断是否存在
-            if (!$predis->has($cacid)) {
-                // 只要不出错，所有数据都加入缓存
-                if (empty($this->data['errer'])) {
+        // 只要不出错，所有数据都加入缓存
+        if (empty($this->data['error'])) {
+            // 缓存写入处理
+            if (!empty($ReINFO)) {
+                // 判断是否存在
+                if (!$predis->has($cacid)) {
                     $predis->set($cacid, gzdeflate(serialize($this->data)), $default['expire']);
                 }
             }
         }
-    //*********************************************
+        // 上面的代码还可以写成，如果连续10次火更多次获取超时就直接进入到错误缓存。防止服务器在大批量请求超时导致服务器堵塞卡死。超时的频率可以通过参数来设置。
         return $this->data;
     }
 
@@ -487,6 +491,14 @@ class WhttpClass
             // 合并请求头
             $this->default_header = arrUp($this->default_header, $User_Agent);
         }
+        // 检查URL请求地址是否为空
+        if (gettype($out['url']) == "array") {
+            if (empty($out['url'][0])) {
+                throw new Exception("Array url cannot be empty.");
+            }
+        } elseif (gettype($out['url']) == "NULL") {
+            throw new Exception("Url cannot be empty.");
+        }
         // 处理多批量URL
         if (!$out) return array();
         if (gettype($out['url']) == 'array') {
@@ -496,6 +508,7 @@ class WhttpClass
         } else {
             return array();
         }
+        // 批量配置请求INFO
         foreach ($urls as $id => $url) {
             // 处理GET地址
             if ($out['method'] == 'GET') {
@@ -583,28 +596,49 @@ class WhttpClass
             }
             // 设置Cookie
             if(!empty($out['cookie'])) $options[CURLOPT_COOKIE] = $out['cookie'];
+
             // 设置超时时间
-            if(array_key_exists('timeout', $out))
+            if (array_key_exists('timeoutms', $out) && array_key_exists('timeout', $out)) {
+                throw new Exception("Timeoutms and timeout cannot be set at the same time.");
+            }
+
+            if (array_key_exists('timeout', $out)) $out['timeoutms'] = $out['timeout'];
+            
+            if(array_key_exists('timeoutms', $out))
             {
-                if (is_null($out['timeout'])) 
+                if (is_null($out['timeoutms'])) 
                 {
                     throw new Exception("Timeout cannot be empty.");
                 }
-                if (gettype($out['timeout']) == 'integer') {
+                if (gettype($out['timeoutms']) == 'integer') {
                     // 设置请求超时
-                    $options[CURLOPT_TIMEOUT_MS] = $out['timeout'];
-                } elseif (gettype($out['timeout']) == 'array') 
-                {
-                    if (!empty($out['timeout'][0])){
-                        // 设置请求超时
-                        $options[CURLOPT_TIMEOUT_MS] = $out['timeout'][0];
+                    if (array_key_exists('timeout', $out)){
+                        $options[CURLOPT_TIMEOUT_MS] = $out['timeoutms']*1000;
+                    } else {
+                        $options[CURLOPT_TIMEOUT_MS] = $out['timeoutms'];
                     }
-                    if (!empty($out['timeout'][1])){
+                } elseif (gettype($out['timeoutms']) == 'array') 
+                {
+                    if (!empty($out['timeoutms'][0])){
+                        // 设置请求超时
+                        if (array_key_exists('timeout', $out)){
+                            $options[CURLOPT_TIMEOUT_MS] = $out['timeoutms'][0]*1000;
+                        } else {
+                            $options[CURLOPT_TIMEOUT_MS] = $out['timeoutms'][0];
+                        }
+                    }
+                    if (!empty($out['timeoutms'][1])){
                         // 设置连接超时
-                        $options[CURLOPT_CONNECTTIMEOUT_MS] = $out['timeout'][1];
+                        if (array_key_exists('timeout', $out)){
+                            $options[CURLOPT_CONNECTTIMEOUT_MS] = $out['timeoutms'][1]*1000;
+                        } else {
+                            $options[CURLOPT_CONNECTTIMEOUT_MS] = $out['timeoutms'][1];
+                        }
                     }
                 }
             }
+            if (array_key_exists('timeout', $out)) unset($out['timeout']);
+
             // 设置代理
             if (!empty($out['proxy'])) {
                 // 设置HTTP代理

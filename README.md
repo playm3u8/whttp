@@ -207,10 +207,14 @@ protected static $setlist1 = array(
     // 请求协议头
     'cookie',    // (string)        
     // 请求cookie
-    'timeout',   // (integer,integer|array)
-    // 默认超时时间都是5000毫秒也就是5秒
+    'timeout',   // (integer,integer)
+    // 默认超时时间都是5秒
+    // 超时时间(参数1响应超时、参数2连接超时)默认设置一个参数是请求超时，支持数组(秒)
+    // 请求cookie
+    'timeoutms',   // (integer,integer)
+    // 默认超时时间都是5000毫秒
     // 超时时间(参数1响应超时、参数2连接超时)默认设置一个参数是请求超时，支持数组(毫秒)
-    'nobody',    // (bool)          
+    'nobody',    // (bool)            
     // 不要body 只返回响应头信息(默认要body)(超快)
     'referer',   // (string)        
     // 伪装请求来路
@@ -295,5 +299,5 @@ public function getGany(callable $callback);
  * @param  string $path 保存目录
  * @return string       
  */
-public function getDownload($name=null, $path=null);
+public function getDownload($name=null, $path);
 ```
