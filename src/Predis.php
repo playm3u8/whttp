@@ -64,5 +64,29 @@ class Predis {
     public function has($key){
         return $this->redis->exists($key);
     }
+    /**
+     * 数据自增
+     * @param string $key KEY名称
+     */
+    public function increment($key) {
+        return $this->redis->incr($key);
+    }
 
+    /**
+     * 将 key 所储存的值加上给定的增量值
+     * @param  string  $key   KEY名称
+     * @param  integer $count 增量数值
+     * @return integer        结果
+     */
+    public function incrby($key, $count = 1){
+        return $this->redis->incrby($key, $count);
+    }
+    
+    /**
+     * 数据自减
+     * @param string $key KEY名称
+     */
+    public function decrement($key) {
+        return $this->redis->decr($key);
+    }
 }
