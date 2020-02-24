@@ -265,7 +265,7 @@ class WhttpClass
                 'host'    => '127.0.0.1',
                 'pass'    => '',
                 'expire'  => 60,
-                'count'   => 5,  // 允许超时请求次数
+                'count'   => 3,  // 允许超时请求次数
                 'overtimedue' => 60, // 超时请求高于次数设置的缓存时间（秒）
             );
             if (gettype($ReINFO) == 'integer') {
@@ -336,10 +336,13 @@ class WhttpClass
                 // 判断是否存在
                 if (!$predis->has($cacid)) {
                     // 设置了超时次数限制就走限制的缓存时间
-                    if ($overtimedue > 0) $default['expire'] = $overtimedue;
+                    if ($predis->has($curl_error_id)) {
+                        // 清除记录
+                        $predis->rm($curl_error_id);
+                        $default['expire']   = $overtimedue;
+                        $this->data['error'] = "Cache: ".$this->data['error'];
+                    }
                     $predis->set($cacid, gzdeflate(serialize($this->data)), $default['expire']);
-                    // 清除记录
-                    if ($predis->has($curl_error_id)) $predis->rm($curl_error_id);
                 }
             }
         } else {
