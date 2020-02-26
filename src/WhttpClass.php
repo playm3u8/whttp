@@ -573,7 +573,7 @@ class WhttpClass
             } else {
                 $options[CURLOPT_FOLLOWLOCATION] = true;
             }
-            p($options, true);
+            
             // 设置要请求头和内容一起返回，反则只会返回请求头，这样好处就是请求很快得到请求头的信息
             if(array_key_exists('nobody', $out)) {
                 if (is_null($out['nobody']) || $out['nobody']) 
