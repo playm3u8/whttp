@@ -83,53 +83,7 @@ class WhttpClass
                         }
                     }
                 }
-/*
-                // 参数不为数组的全部为1
-                if (gettype($array) != 'array') {
-                    $count1 = 1;
-                } else {
-                    $count1 = count($array);
-                }
-                // 参数数量和类型
-                $value = $setlist[strtolower($func)];
-                // 约束参数数量
-                if ($count1 != count($value)){
-                    // url参数不限制
-                    if (gettype($array) != 'array' && strtolower($func) != 'url') {
-
-
-
-                        exit('参数传入过多或过少.');
-                    }
-                }
-
-
-            
-                // 约束参数类型
-                // echo "----------".gettype($array)."<br><br>";
-                // p($value);
-                
-                // for ($i=0; $i < count($value); $i++) {
-                //     $list = explode("|", $setlist[strtolower($func)][$i]);
-                // }
-
-                if (gettype($array) != 'array') {
-                    // 单个参数的
-                    // echo $value[0].'=='.gettype($array)."<br>";
-                    if(strpos($value[0], gettype($array)) === false){ 
-                        exit('传入参数类型有误.');
-                    } 
-                } else {
-                    // 多个参数的
-                    for ($i=0; $i < count($value); $i++) { 
-                        echo gettype($array[$i]) ."<br>";
-                        p($value[$i]);
-                    }
-                }
-*/
-
                 $this->method[strtolower($func)] = $array;
-
             } else {
                 throw new Exception('There seems to be no "'.$func.'" member.');
             }
@@ -322,15 +276,11 @@ class WhttpClass
                 $default['expire'] = $ReINFO;
 
             } elseif(gettype($ReINFO) == 'array'){
-
-                if (array_key_exists('host', $ReINFO) && array_key_exists('pass', $ReINFO) && array_key_exists('expire', $ReINFO)) {
-                    $default['host']   = empty($ReINFO['host'])? $default['host']:$ReINFO['host'];
-                    $default['pass']   = empty($ReINFO['pass'])? $default['pass']:$ReINFO['pass'];
-                    $default['expire'] = empty($ReINFO['expire'])? $default['expire']:$ReINFO['expire'];
-                } else {
-                    throw new Exception("Cache configuration error.");
-                }
-
+                $default['host']        = empty($ReINFO[0])? $default['host']:$ReINFO[0];
+                $default['pass']        = empty($ReINFO[1])? $default['pass']:$ReINFO[1];
+                $default['expire']      = empty($ReINFO[2])? $default['expire']:$ReINFO[2];
+                $default['count']       = empty($ReINFO[3])? $default['count']:$ReINFO[3];
+                $default['overtimedue'] = empty($ReINFO[4])? $default['overtimedue']:$ReINFO[4];
             } else {
                 throw new Exception("Cache configuration error.");
             }
