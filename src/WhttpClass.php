@@ -74,8 +74,7 @@ class WhttpClass
                 if (count($params) == 1) {
                     $array = $params[0];
                 } else {
-                    for ($i=0; $i < count($params); $i++) 
-                    {
+                    for ($i=0; $i < count($params); $i++) {
                         if (is_null($params[$i])) {
                             $array[$i] = null;
                         } else {
@@ -566,8 +565,7 @@ class WhttpClass
             ];
             // 禁止重定向，默认重定向直接跳过
             if(array_key_exists('jump', $out)) {
-                if (is_null($out['jump']) || $out['jump']) 
-                {
+                if (is_null($out['jump']) || $out['jump']) {
                     $options[CURLOPT_FOLLOWLOCATION] = false;
                 } else {
                     $options[CURLOPT_FOLLOWLOCATION] = true;
@@ -575,6 +573,7 @@ class WhttpClass
             } else {
                 $options[CURLOPT_FOLLOWLOCATION] = true;
             }
+            p($options, true);
             // 设置要请求头和内容一起返回，反则只会返回请求头，这样好处就是请求很快得到请求头的信息
             if(array_key_exists('nobody', $out)) {
                 if (is_null($out['nobody']) || $out['nobody']) 
@@ -582,6 +581,7 @@ class WhttpClass
                     $options[CURLOPT_NOBODY] = true;
                 }
             }
+
             // 回调处理事件, 开启了exec就不输出了
             if (array_key_exists('writefunc', $out)) {
                 if (is_callable($out['writefunc'])) {
