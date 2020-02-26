@@ -1,4 +1,3 @@
 <?php
 
-
-print_r($_GET);
+echo date("Y-m-d h:i:s");

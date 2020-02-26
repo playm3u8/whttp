@@ -222,19 +222,19 @@ if (!function_exists('fast')) {
     }
 }
 
-if (!function_exists('download')) {
+if (!function_exists('download')) {    
     /**
      * 下载文件
-     * @param  string $name 文件名称
-     * @param  string $path 保存目录
-     * @return string       
+     * @Author   laoge
+     * @DateTime 2020-02-26
+     * @param    data     $body 二进制数据
+     * @param    string   $name 文件安名称
+     * @param    string   $path 保存目录
+     * @return   string           下载路径
      */
-    function download($body, $name, $path=null)
+    function download($body, $name, $path)
     {
         if (empty($name) || !$body) return Null;
-
-        if (empty($path)) $path = PL_RUNTIME_PATH.'file/';
-
         // 创建目录
         if(!file_exists($path)) mkdir ($path, 0777, true);
         // 打开文件

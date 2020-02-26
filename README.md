@@ -188,11 +188,11 @@ p($http,true);
  * @var array
  */
 private static $method = array(
-    'GET',        // get(string|array)
-    'POST',       // post(string|array, string|array)
-    'PUT',        // put(string|array, string|array)
-    'PATCH',      // patch(string|array, string|array)
-    'DELETE',     // delete(string|array, string|array)
+    'GET'     => ['string|array', 'string|array'],
+    'POST'    => ['string|array', 'string|array'],
+    'PUT'     => ['string|array', 'string|array'],
+    'PATCH'   => ['string|array', 'string|array'],
+    'DELETE'  => ['string|array', 'string|array'],
 );
 ```
 ```php
@@ -201,40 +201,54 @@ private static $method = array(
  * @var array
  */
 protected static $setlist1 = array(
-    'jump',      // (bool)          
-    // 跳过重定向(默认会跳过重定向)
-    'header',    // (array)         
+    'jump'      => ['boolean|NULL'],       
+    // 跳过重定向(默认会跳过重定向)(可空)
+
+    'header'    => ['array'],        
     // 请求协议头
-    'cookie',    // (string)        
+
+    'cookie'    => ['string'],   
     // 请求cookie
-    'timeout',   // (integer,integer)
+
+    'timeout'   => ['integer', 'integer|NULL'],
     // 默认超时时间都是5秒
     // 超时时间(参数1响应超时、参数2连接超时)默认设置一个参数是请求超时，支持数组(秒)
-    // 请求cookie
-    'timeoutms',   // (integer,integer)
+
+    'timeoutms' => ['integer', 'integer|NULL'],
     // 默认超时时间都是5000毫秒
     // 超时时间(参数1响应超时、参数2连接超时)默认设置一个参数是请求超时，支持数组(毫秒)
-    'nobody',    // (bool)            
-    // 不要body 只返回响应头信息(默认要body)(超快)
-    'referer',   // (string)        
+
+    'nobody'    => ['boolean|NULL'],            
+    // 不要body 只返回响应头信息(默认要body)(超快)(可空)
+
+    'referer'   => ['string'],       
     // 伪装请求来路
-    'proxy',     // (string)        
+    
+    'proxy'     => ['string'],       
     // HTTP代理
-    'socks5',    // (string)        
+    
+    'socks5'    => ['string'], 
     // socks5代理
-    'fool',      // (string)        
+    
+    'fool'      => ['string'],       
     // 伪装用户IP，有些无效
-    'utf8',      // (bool)          
-    // 解码UTF8响应内容(在返回内容乱码的情况下使用) 
-    'left',      // (string)        
+    
+    'utf8'      => ['boolean|NULL'],     
+    // 解码UTF8响应内容(在返回内容乱码的情况下使用)(可空) 
+    
+    'left'      => ['string'],    
     // 截取返回Body指定左边字符
-    'core',      // (string,string) 
+    
+    'core'      => ['string', 'string'],    
     // 截取返回Body指定中间字符
-    'right',     // (string)        
+    
+    'right'     => ['string'],   
     // 截取返回Body指定右边字符
-    'cache',     // (integer|array) 
-    // 缓存配置(integer)或(array如:['host'=>'','pass'=>'','expire'=>'']) 
-    'writefunc', // (callable)      
+    
+    'cache'     => ['string', 'string|NULL', 'integer', 'integer', 'integer'],
+    // 缓存配置 [IP,密码,缓存时间,限制超时次数,超时超过次数缓存的时间]
+    
+    'writefunc' => ['callable'],    
     // 回调方法,可以干预实时获取的内容,有2个参数 function($ch,$exec){}
 );
 ```

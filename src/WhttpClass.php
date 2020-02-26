@@ -33,11 +33,11 @@ class WhttpClass
      * 设置参数列表2(隐藏的)
      * @var array
      */
-    private $setlist2 = array(
-        'url',        // (string|array) 请求地址
-        'data',       // (string|array) 提交数据支持文本和数组
-        'method',     // (string)       请求类型
-    );
+    private $setlist2 = [
+        'url'    => ['string|array'],  // 请求地址
+        'data'   => ['string|array'],  // 提交数据支持文本和数组
+        'method' => ['string'],        // 请求类型
+    ];
 
     /**
      * 干预获取过程储存的数据
@@ -57,7 +57,7 @@ class WhttpClass
      * 默认请求头
      * @var array
      */
-    private $default_header = array('Accept-Encoding: gzip');
+    private $default_header = ['Accept-Encoding: gzip'];
 
     /**
      * 魔术方法 有不存在的操作的时候执行
@@ -69,18 +69,67 @@ class WhttpClass
     public function __call($func, $params)
     {
         if (isset($func)) {
-            if (in_array($func, Whttp::$setlist1) || in_array($func, $this->setlist2)) {
-                if (count($params) == 2 && !is_null($params[1])) {
-                    $this->method[strtolower($func)] = array($params[0], $params[1]);
-                } elseif(count($params) > 2) {
-                    throw new Exception('"'.$func.'" Too many parameters passed.');
+            $setlist = array_merge($this->setlist2, Whttp::$setlist1);
+            if (in_array($func, array_keys($setlist))) {
+                if (count($params) == 1) {
+                    $array = $params[0];
                 } else {
-                    if (is_null($params[0])) {
-                        $this->method[strtolower($func)] = null;
-                    } else {
-                        $this->method[strtolower($func)] = $params[0];
+                    for ($i=0; $i < count($params); $i++) 
+                    {
+                        if (is_null($params[$i])) {
+                            $array[$i] = null;
+                        } else {
+                            $array[$i] = $params[$i];
+                        }
                     }
                 }
+/*
+                // 参数不为数组的全部为1
+                if (gettype($array) != 'array') {
+                    $count1 = 1;
+                } else {
+                    $count1 = count($array);
+                }
+                // 参数数量和类型
+                $value = $setlist[strtolower($func)];
+                // 约束参数数量
+                if ($count1 != count($value)){
+                    // url参数不限制
+                    if (gettype($array) != 'array' && strtolower($func) != 'url') {
+
+
+
+                        exit('参数传入过多或过少.');
+                    }
+                }
+
+
+            
+                // 约束参数类型
+                // echo "----------".gettype($array)."<br><br>";
+                // p($value);
+                
+                // for ($i=0; $i < count($value); $i++) {
+                //     $list = explode("|", $setlist[strtolower($func)][$i]);
+                // }
+
+                if (gettype($array) != 'array') {
+                    // 单个参数的
+                    // echo $value[0].'=='.gettype($array)."<br>";
+                    if(strpos($value[0], gettype($array)) === false){ 
+                        exit('传入参数类型有误.');
+                    } 
+                } else {
+                    // 多个参数的
+                    for ($i=0; $i < count($value); $i++) { 
+                        echo gettype($array[$i]) ."<br>";
+                        p($value[$i]);
+                    }
+                }
+*/
+
+                $this->method[strtolower($func)] = $array;
+
             } else {
                 throw new Exception('There seems to be no "'.$func.'" member.');
             }
@@ -261,13 +310,13 @@ class WhttpClass
         $ReINFO = $this->method['cache'];
         if (!empty($ReINFO)) {
             // 默认Redis配置
-            $default = array(
+            $default = [
                 'host'    => '127.0.0.1',
                 'pass'    => '',
                 'expire'  => 60,
-                'count'   => 3,  // 允许超时请求次数
+                'count'   => 3,      // 允许超时请求次数
                 'overtimedue' => 60, // 超时请求高于次数设置的缓存时间（秒）
-            );
+            ];
             if (gettype($ReINFO) == 'integer') {
                 // 赋值有效期
                 $default['expire'] = $ReINFO;
@@ -330,27 +379,23 @@ class WhttpClass
         $count         = $default['count'];   // 次
         $overtimedue   = $default['overtimedue']; // 秒
         $curl_error_id = "curl_error_".$cacid;
-        if (empty($this->data['error']) || $predis->get($curl_error_id) >= $count-1) {
-            // 缓存写入处理
-            if (!empty($ReINFO)) {
-                // 判断是否存在
-                if (!$predis->has($cacid)) {
-                    // 设置了超时次数限制就走限制的缓存时间
-                    if ($predis->has($curl_error_id)) {
-                        // 清除记录
-                        $predis->rm($curl_error_id);
-                        $default['expire']   = $overtimedue;
-                        $this->data['error'] = "Cache: ".$this->data['error'];
-                    }
-                    $predis->set($cacid, gzdeflate(serialize($this->data)), $default['expire']);
+        // 如果设置了缓存就进入写入处理
+        if (!empty($ReINFO)) {
+            if (empty($this->data['error']) || $predis->get($curl_error_id) >= $count-1) {
+                // 设置了超时次数限制就走限制的缓存时间
+                if ($predis->has($curl_error_id)) {
+                    // 清除记录
+                    $predis->rm($curl_error_id);
+                    $default['expire']   = $overtimedue;
+                    $this->data['error'] = "Cache: ".$this->data['error'];
                 }
-            }
-        } else {
-
-            if (strpos($this->data['error'], "tion timed") !== false){
-                // 请求超时记录一次
-                if ($count > 0){
-                    $predis->increment($curl_error_id);
+                $predis->set($cacid, gzdeflate(serialize($this->data)), $default['expire']);
+            } else {
+                if (strpos($this->data['error'], "timed out") !== false) {
+                    // 请求超时记录一次
+                    if ($count > 0){
+                        $predis->increment($curl_error_id);
+                    }
                 }
             }
         }
@@ -364,7 +409,7 @@ class WhttpClass
      */
     private function multi($options) 
     {
-        $op = array();
+        $op = [];
         // 初始化(并发)
         $mh = curl_multi_init();
         // 批量设置
@@ -379,7 +424,7 @@ class WhttpClass
             curl_multi_add_handle($mh, $ch);
         }
         // 并发处理
-        $return   = array();
+        $return   = [];
         $id       = 0;
         $active   = Null;
         $callData = Null;
@@ -505,9 +550,7 @@ class WhttpClass
     {
         // 获取用户浏览器标示
         if (!empty($_SERVER['HTTP_USER_AGENT'])){
-            $User_Agent = array(
-                'User-Agent: '.$_SERVER['HTTP_USER_AGENT']
-            );
+            $User_Agent = ['User-Agent: '.$_SERVER['HTTP_USER_AGENT']];
             // 合并请求头
             $this->default_header = arrUp($this->default_header, $User_Agent);
         }
@@ -520,13 +563,13 @@ class WhttpClass
             throw new Exception("Url cannot be empty.");
         }
         // 处理多批量URL
-        if (!$out) return array();
+        if (!$out) return [];
         if (gettype($out['url']) == 'array') {
             $urls    = $out['url'];
         } elseif (gettype($out['url']) == 'string') {
             $urls[0] = $out['url'];
         } else {
-            return array();
+            return [];
         }
         // 批量配置请求INFO
         foreach ($urls as $id => $url) {
@@ -542,7 +585,7 @@ class WhttpClass
                 }
             }
             // 默认值
-            $options = array( 
+            $options = [ 
                 // 请求地址
                 CURLOPT_URL            => $url,
                 // 设置cURL允许执行的最长毫秒数
@@ -569,8 +612,8 @@ class WhttpClass
                 // 默认请求来路
                 CURLOPT_REFERER        => empty($out['referer'])? $url : $out['referer'],
                 // 默认请求头
-                CURLOPT_HTTPHEADER     => arrUp($this->default_header, empty($out['header'])? array():$out['header']),
-            );
+                CURLOPT_HTTPHEADER     => arrUp($this->default_header, empty($out['header'])? []:$out['header']),
+            ];
             // 禁止重定向，默认重定向直接跳过
             if(array_key_exists('jump', $out)) {
                 if (is_null($out['jump']) || $out['jump']) 
@@ -592,17 +635,17 @@ class WhttpClass
             // 回调处理事件, 开启了exec就不输出了
             if (array_key_exists('writefunc', $out)) {
                 if (is_callable($out['writefunc'])) {
-                    $options[CURLOPT_WRITEFUNCTION] = array($this, 'parent::receiveResponse');
+                    $options[CURLOPT_WRITEFUNCTION] = [$this, 'parent::receiveResponse'];
                 }
             }
             // 下载处理(单URL请求)
             if (count($urls) == 1) {
                 if (!empty($out['fp_path'])) {
-                    $options[CURLOPT_WRITEFUNCTION] = array($this, 'parent::receiveDownload');
+                    $options[CURLOPT_WRITEFUNCTION] = [$this, 'parent::receiveDownload'];
                 }
             }
             // 处理提交数据
-            if (in_array($out['method'], array('POST','PUT','PATCH','DELETE'))) {
+            if (in_array($out['method'], ['POST','PUT','PATCH','DELETE'])) {
                 // 设置请求类型
                 if ($out['data']) {
                     $options[CURLOPT_POST]       = true;
@@ -681,10 +724,10 @@ class WhttpClass
                 } else {
                     throw new Exception("Fool cannot be empty.");
                 }
-                $options[CURLOPT_HTTPHEADER] = arrUp($options[CURLOPT_HTTPHEADER],array(
+                $options[CURLOPT_HTTPHEADER] = arrUp($options[CURLOPT_HTTPHEADER],[
                     'Client-IP: ' . $string,
                     'X-Forwarded-For: ' . $string
-                ));
+                ]);
             }
             $header_STR = strtolower(implode(PHP_EOL, $options[CURLOPT_HTTPHEADER]));
             if (strstr($header_STR, 'gzip') && strstr($header_STR, 'accept-encoding')) {
@@ -706,11 +749,11 @@ class WhttpClass
      */
     private function getExec($exec, $info, $options, $ch)
     {
-        $data = array(
+        $data = [
             'body'     => null,
             'headers'  => null,
-            'download' => array( 'state' => false, 'path' => null),
-        );
+            'download' => ['state' => false, 'path' => null],
+        ];
         //  无数据处理
         if (!$exec) {
             if(!empty($this->method['fp_path'])) {
