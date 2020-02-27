@@ -6,6 +6,6 @@ use PL\Whttp;
 
 $url = "https://git.mvgao.com/get.php";
 
-$result = Whttp::get($url,"r=2")->jump(true)->timeout(4,5)->cache('127.0.0.1','',30,3,10);
+$result = Whttp::get($url,"r=2")->jump(false);
 
-p($result->getInfo());
+p($result->getAll());

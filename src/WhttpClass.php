@@ -82,9 +82,44 @@ class WhttpClass
                         }
                     }
                 }
-                $this->method[strtolower($func)] = $array;
+                // 不为数组的全部为单参数
+                $count1 = (gettype($array) != 'array')? 1:count($array);
+                // 参数名称
+                $pname = strtolower($func);
+                // 参数数量和类型
+                $value = $setlist[$pname];
+                // 约束参数数量
+                if ($count1 != count($value) && $pname != 'url') {
+                    // url参数不限制
+                    if ($count1 > count($value)) {
+                        $this->Error($pname.':传入的参数太多');
+                    }
+                    for ($i=0; $i < count($value); $i++) { 
+                        if(strpos($value[$i], "NULL") === false) { 
+                            // 必要参数
+                            if ($i+1 > $count1){
+                                $this->Error($pname.':参数'.($i+1).'不能为空');
+                            }
+                        }
+                    }
+                }
+                // 参数类型约束
+                if (gettype($array) != 'array') {
+                    // 单个参数的
+                    if(strpos($value[0], gettype($array)) === false){ 
+                        $this->Error($pname.':传入参数类型有误');
+                    } 
+                } else {
+                    // 多个参数的
+                    for ($i=0; $i < count($value); $i++) { 
+                        if (strpos($value[$i], gettype($array[$i])) === false){
+                            $this->Error($pname.':传入参数'.($i+1).'类型有误');
+                        }
+                    }
+                }
+                $this->method[$pname] = $array;
             } else {
-                throw new Exception('There seems to be no "'.$func.'" member.');
+                $this->Error('似乎没有'.$func.'成员');
             }
         }
         return $this;
@@ -201,7 +236,7 @@ class WhttpClass
         // 处理配置信息
         $options = $this->config($this->method);
         if (count($options) == 1) {
-            throw new Exception("Single URL request is not supported.");
+            $this->Error("不支持单个URL请求");
         }
         return $this->send($options); 
     }
@@ -217,7 +252,7 @@ class WhttpClass
         $this->method['fp_name'] = $name;
         // 检查保存路径的完整性
         if (empty($path)) {
-            throw new Exception("Save file path cannot be empty.");
+            $this->Error("保存文件路径不能为空");
         } elseif(substr($path, -1) != "/") {
             $path = $path."/";
         }
@@ -243,7 +278,7 @@ class WhttpClass
         } elseif (count($options) > 1) {
             // 判断是否调用了getGany方法
             if ($this->callback == Null) {
-                throw new Exception('Please use the "getGany" method.');
+                $this->Error('请使用 "getGany" 方法');
             }
             // 批量请求
             return $this->multi($options);
@@ -257,6 +292,7 @@ class WhttpClass
      */
     private function single($options) 
     {
+
         // 缓存ID标示
         $cacid = $this->getCacheID($options[0]);
         // 识别缓存驱动
@@ -281,7 +317,7 @@ class WhttpClass
                 $default['count']       = empty($ReINFO[3])? $default['count']:$ReINFO[3];
                 $default['overtimedue'] = empty($ReINFO[4])? $default['overtimedue']:$ReINFO[4];
             } else {
-                throw new Exception("Cache configuration error.");
+                $this->Error("缓存配置错误");
             }
             // 实例化Redis
             $predis = new Predis($default);
@@ -506,10 +542,10 @@ class WhttpClass
         // 检查URL请求地址是否为空
         if (gettype($out['url']) == "array") {
             if (empty($out['url'][0])) {
-                throw new Exception("Array url cannot be empty.");
+                $this->Error("数组url不能为空");
             }
         } elseif (gettype($out['url']) == "NULL") {
-            throw new Exception("Url cannot be empty.");
+            $this->Error("Url不能为空");
         }
         // 处理多批量URL
         if (!$out) return [];
@@ -612,17 +648,12 @@ class WhttpClass
 
             // 设置超时时间
             if (array_key_exists('timeoutms', $out) && array_key_exists('timeout', $out)) {
-                throw new Exception("Timeoutms and timeout cannot be set at the same time.");
+                $this->Error("不能同时设置'请求超时'和'连接超时'");
             }
 
             if (array_key_exists('timeout', $out)) $out['timeoutms'] = $out['timeout'];
             
-            if(array_key_exists('timeoutms', $out))
-            {
-                if (is_null($out['timeoutms'])) 
-                {
-                    throw new Exception("Timeout cannot be empty.");
-                }
+            if(array_key_exists('timeoutms', $out)) {
                 if (gettype($out['timeoutms']) == 'integer') {
                     // 设置请求超时
                     if (array_key_exists('timeout', $out)){
@@ -664,15 +695,14 @@ class WhttpClass
                 $options[CURLOPT_PROXYAUTH] = CURLAUTH_BASIC;
                 $options[CURLOPT_PROXYTYPE] = CURLPROXY_SOCKS5;
             }
+
             // 设置伪代理
-            if (empty($out['fool']) == false) 
-            {
+            if (array_key_exists('fool', $out)) {
+                if (empty($out['fool'])) $this->Error("代理不能是空的");
                 if (gettype($out['fool']) == 'array') {
                     $string = implode(",", $out['fool']);
                 } else if (gettype($out['fool']) == 'string') {
                     $string = $out['fool'];
-                } else {
-                    throw new Exception("Fool cannot be empty.");
                 }
                 $options[CURLOPT_HTTPHEADER] = arrUp($options[CURLOPT_HTTPHEADER],[
                     'Client-IP: ' . $string,
@@ -844,6 +874,15 @@ class WhttpClass
         unset($options[CURLOPT_WRITEFUNCTION]);
         return md5(serialize($options));
     }
+
+    /**
+     * 错误提示
+     * @Author   laoge
+     * @DateTime 2020-02-27
+     * @param    string     $string 错误信息
+     * @return        
+     */
+    private function error($string) { throw new Exception($string);}
 
     /**
      * 销毁处理
