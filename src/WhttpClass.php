@@ -69,8 +69,9 @@ class WhttpClass
     public function __call($func, $params)
     {
         if (isset($func)) {
+            $pname   = strtolower($func);
             $setlist = array_merge($this->setlist2, Whttp::$setlist1);
-            if (in_array($func, array_keys($setlist))) {
+            if (in_array($pname, array_keys($setlist))) {
                 if (count($params) == 1) {
                     $array = $params[0];
                 } else {
@@ -82,14 +83,14 @@ class WhttpClass
                         }
                     }
                 }
-                // 不为数组的全部为单参数
-                $count1 = (gettype($array) != 'array')? 1:count($array);
-                // 参数名称
-                $pname = strtolower($func);
                 // 参数数量和类型
                 $value = $setlist[$pname];
+                // URL和DATA参数只约束类型不限制数量
+                if ($pname == 'url' || $pname == 'data') goto end;
+                // 不为数组的全部为单参数
+                $count1 = (gettype($array) != 'array')? 1:count($array);
                 // 约束参数数量
-                if ($count1 != count($value) && $pname != 'url') {
+                if ($count1 != count($value) && $pname != 'url' && $pname != 'data') {
                     // url参数不限制
                     if ($count1 > count($value)) {
                         $this->Error($pname.':传入的参数太多');
@@ -106,20 +107,27 @@ class WhttpClass
                 // 参数类型约束
                 if (gettype($array) != 'array') {
                     // 单个参数的
+                    end:
                     if(strpos($value[0], gettype($array)) === false){ 
                         $this->Error($pname.':传入参数类型有误');
                     } 
                 } else {
                     // 多个参数的
                     for ($i=0; $i < count($value); $i++) { 
-                        if (strpos($value[$i], gettype($array[$i])) === false){
+                        if (strpos($value[$i], gettype($array[$i])) === false) {
                             $this->Error($pname.':传入参数'.($i+1).'类型有误');
                         }
                     }
                 }
+                // 约束重复的参数
+                if ($this->method) {
+                    if (in_array($pname, array_keys($this->method))) {
+                        $this->Error('参数'.$pname.'被重复设置');
+                    }
+                }
                 $this->method[$pname] = $array;
             } else {
-                $this->Error('似乎没有'.$func.'成员');
+                $this->Error('似乎没有'.$pname.'成员');
             }
         }
         return $this;
@@ -268,6 +276,7 @@ class WhttpClass
      */
     private function send($options=null) 
     {
+        p($this->method ,true);
         // 数据存在就直接返回
         if($this->data) return $this->data;
         // 处理配置信息
