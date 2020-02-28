@@ -276,7 +276,6 @@ class WhttpClass
      */
     private function send($options=null) 
     {
-        p($this->method ,true);
         // 数据存在就直接返回
         if($this->data) return $this->data;
         // 处理配置信息
