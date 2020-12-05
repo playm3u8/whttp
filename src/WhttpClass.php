@@ -90,8 +90,8 @@ class WhttpClass
                 // 不为数组的全部为单参数
                 $count1 = (gettype($array) != 'array')? 1:count($array);
                 // 约束参数数量
-                if ($count1 != count($value) && $pname != 'url' && $pname != 'data') {
-                    // url参数不限制
+                if ($count1 != count($value) && !in_array($pname,['url','data','header'])) {
+                    // url,data,header参数不限制
                     if ($count1 > count($value)) {
                         $this->Error($pname.':传入的参数太多');
                     }
@@ -112,10 +112,13 @@ class WhttpClass
                         $this->Error($pname.':传入参数类型有误');
                     } 
                 } else {
-                    // 多个参数的
-                    for ($i=0; $i < count($value); $i++) { 
-                        if (strpos($value[$i], gettype($array[$i])) === false) {
-                            $this->Error($pname.':传入参数'.($i+1).'类型有误');
+                    // header排除外，以为是数组有多个
+                    if (!in_array($pname,['header'])){
+                        // 多个参数的
+                        for ($i=0; $i < count($value); $i++) { 
+                            if (strpos($value[$i], gettype($array[$i])) === false) {
+                                $this->Error($pname.':传入参数'.($i+1).'类型有误');
+                            }
                         }
                     }
                 }
