@@ -160,7 +160,8 @@ class WhttpClass
         $return = $this->send();
         // 没有直接返回
         if(!$return['headers']) return Null;
-        return fast($return, "headers.".$name);
+        // trim去除回车符号
+        return trim(fast($return, "headers.".$name));
     }
 
     /**
