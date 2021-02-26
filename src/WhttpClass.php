@@ -68,6 +68,7 @@ class WhttpClass
      */
     public function __call($func, $params)
     {
+        $array = null;
         if (isset($func)) {
             $pname   = strtolower($func);
             $setlist = array_merge($this->setlist2, Whttp::$setlist1);
@@ -304,12 +305,12 @@ class WhttpClass
      */
     private function single($options) 
     {
-
         // 缓存ID标示
         $cacid = $this->getCacheID($options[0]);
         // 识别缓存驱动
-        $ReINFO = $this->method['cache'];
-        if (!empty($ReINFO)) {
+        $ReINFO = empty($this->method['cache'])? Null: $this->method['cache'];
+        if (!empty($ReINFO)) 
+        {
             // 默认Redis配置
             $default = [
                 'host'    => '127.0.0.1',
@@ -371,13 +372,13 @@ class WhttpClass
         curl_close($ch);
         // 删除无用数据
         unset($this->data['exec']);
-        // 只要不出错，所有数据都加入缓存
-        // 连续请求超时次数高于设定次数将进入缓存
-        $count         = $default['count'];   // 次
-        $overtimedue   = $default['overtimedue']; // 秒
-        $curl_error_id = "curl_error_".$cacid;
         // 如果设置了缓存就进入写入处理
         if (!empty($ReINFO)) {
+            // 只要不出错，所有数据都加入缓存
+            // 连续请求超时次数高于设定次数将进入缓存
+            $count         = $default['count'];   // 次
+            $overtimedue   = $default['overtimedue']; // 秒
+            $curl_error_id = "curl_error_".$cacid;
             if (empty($this->data['error']) || $predis->get($curl_error_id) >= $count-1) {
                 // 设置了超时次数限制就走限制的缓存时间
                 if ($predis->has($curl_error_id)) {
@@ -645,9 +646,12 @@ class WhttpClass
             // 处理提交数据
             if (in_array($out['method'], ['POST','PUT','PATCH','DELETE'])) {
                 // 设置请求类型
-                if ($out['data']) {
+                if (array_key_exists('data', $out)) {
                     $options[CURLOPT_POST]       = true;
                     $options[CURLOPT_POSTFIELDS] = $out['data'];
+                } else {
+                    $options[CURLOPT_POST]       = true;
+                    $options[CURLOPT_POSTFIELDS] = "";
                 }
             }
             // SSL设置
