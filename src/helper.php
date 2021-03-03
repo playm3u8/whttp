@@ -196,6 +196,33 @@ if (!function_exists('arrUp')) {
     }
 }
 
+if (!function_exists('setUrl')) {
+    /**
+     * 修改和设置Url数据
+     * @Author   laoge
+     * @DateTime 2021-03-02
+     * @param    string     $url  [description]
+     * @param    array      $name [description]
+     */
+    function setUrl(string $url, array $name)
+    {
+        $data = parse_url($url);
+        $data['query'] = parse_string($data['query']);
+        foreach ($name as $key1 => $value1) {
+            if(gettype($value1) == 'array') {
+                foreach ($value1 as $key2 => $value2) {
+                    $data[$key1][$key2] = $value2;
+                }
+            } else {
+                $data[$key1] = $value1;
+            }
+        }
+        $url = $data['scheme'].'://'.$data['host'];
+        $url = $url.$data['path'].merge_string($data['query']);
+        return $url;
+    }
+}
+
 if (!function_exists('fast')) {
     /**
      * 方便快速获取二维数组
