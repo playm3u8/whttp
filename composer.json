@@ -10,7 +10,8 @@
         }
     ],
     "require": {
-        "php": ">=5.4.0"
+        "php": ">=7.2.0",
+        "guiguiboy/php-cli-progress-bar": ">=0.0.4"
     },
     "autoload": {
         "psr-4": {

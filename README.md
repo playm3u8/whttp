@@ -128,18 +128,11 @@ Whttp::get($urls)->getGany(function($data){
 	// return "sssss";
 });
 ```
-*9. 下载文件*
+*9. 下载文件(目前只支持单文件下载)*
 ```php
 // 单个URL
-$urls = 'https://dldir1.qq.com/weixin/Windows/WeChatSetup.exe';
-// 多个URL
-/*
-$urls = array(
-	'https://dldir1.qq.com/weixin/Windows/WeChatSetup.exe',
-	'https://dldir1.qq.com/weixin/Windows/WeChatSetup.exe'
-);
-*/
-$http = Whttp::get($urls)->timeout(60);
+$url = 'https://dldir1.qq.com/weixin/Windows/WeChatSetup.exe';
+$http = Whttp::get($url)->timeout(60);
 // 开始下载
 $http->getDownload();
 if ($http->getError()) {

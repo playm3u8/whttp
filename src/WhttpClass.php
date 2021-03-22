@@ -8,6 +8,8 @@
 // +----------------------------------------------------------------------
 namespace PL;
 use Exception;
+use ProgressBar\Manager;
+use ProgressBar\Registry;
 
 class WhttpClass
 {
@@ -52,6 +54,12 @@ class WhttpClass
     private $fptmp;
 
     private $call_return = Null;
+
+    /**
+     * progressBar
+     * @var [type]
+     */
+    private $progressBar;
 
     /**
      * 默认请求头
@@ -255,13 +263,16 @@ class WhttpClass
     }
 
     /**
-     * 下载文件(支持批量)
-     * @param  string $name 文件名称,为空自动更具URL识别文件名
+     * 下载文件(目前只支持单文件下载)
      * @param  string $path 保存目录
+     * @param  string $iscommand 是否为命令行执行(命令行执行会显示进度)
+     * @param  string $name 文件名称,为空自动更具URL识别文件名
      * @return string       
      */
-    public function getDownload($name=null, $path)
+    public function getDownload($path, $iscommand=false, $name=null)
     {
+        $this->progressBar = new Manager(0, 100);
+        $this->progressBar->setFormat('Progress : [%bar%] %percent%% %eta%');
         $this->method['fp_name'] = $name;
         // 检查保存路径的完整性
         if (empty($path)) {
@@ -291,7 +302,7 @@ class WhttpClass
         } elseif (count($options) > 1) {
             // 判断是否调用了getGany方法
             if ($this->callback == Null) {
-                $this->Error('请使用 "getGany" 方法');
+                $this->Error('批量处理请使用 "getGany" 方法');
             }
             // 批量请求
             return $this->multi($options);
@@ -640,6 +651,11 @@ class WhttpClass
             // 下载处理(单URL请求)
             if (count($urls) == 1) {
                 if (!empty($out['fp_path'])) {
+                    // 开启进度条
+                    $options[CURLOPT_NOPROGRESS] = false;
+                    // 进度条的触发函数
+                    $options[CURLOPT_PROGRESSFUNCTION] = [$this, 'parent::progress'];
+                    // 数据下载触发函数
                     $options[CURLOPT_WRITEFUNCTION] = [$this, 'parent::receiveDownload'];
                 }
             }
@@ -811,7 +827,7 @@ class WhttpClass
                     }
 
                 } else {
-
+                    // 下面代码无效的，还没写好。
                     if (!$down = download($data['body'],$name,$this->method['fp_path'])) 
                     {
                         $data['download']['state'] = false;
@@ -887,7 +903,11 @@ class WhttpClass
      */
     private function getCacheID($options)
     {
+        // 必要删除回调事件属性
+        // 必要删除回调事件属性
+        // 必要删除回调事件属性
         unset($options[CURLOPT_WRITEFUNCTION]);
+        unset($options[CURLOPT_PROGRESSFUNCTION]);
         return md5(serialize($options));
     }
 
@@ -906,5 +926,44 @@ class WhttpClass
     public function __destruct()
     {
         unset($this->method, $this->data, $this->exec, $this->fptmp, $this->call_return);
+    }
+
+    /**
+     * 进度条下载.
+     *
+     * @param $ch
+     * @param $countDownloadSize    总下载量
+     * @param $currentDownloadSize  当前下载量
+     * @param $countUploadSize      
+     * @param $currentUploadSize
+     */
+    private function progress($ch, $countDownloadSize, $currentDownloadSize, $countUploadSize, $currentUploadSize)
+    {
+        // 等于 0 的时候，应该是预读资源不等于0的时候即开始下载
+        // 这里的每一个判断都是坑，多试试就知道了
+        if (0 === $countDownloadSize) {
+            return false;
+        }
+        // 有时候会下载两次，第一次很小，应该是重定向下载
+        if ($countDownloadSize > $currentDownloadSize) {
+            $this->downloaded = false;
+            // 继续显示进度条
+        }
+        // 已经下载完成还会再发三次请求
+        elseif ($this->downloaded) {
+            return false;
+        }
+        // 两边相等下载完成并不一定结束，
+        elseif ($currentDownloadSize === $countDownloadSize) {
+            return false;
+        }
+        // 开始计算
+        $bar = $currentDownloadSize / $countDownloadSize * 100;
+        $bar = (int)round($bar, 2);
+        if ($bar < 100 ) {
+            $this->progressBar->update($bar);
+        } else {
+            echo "\n";
+        }
     }
 }
