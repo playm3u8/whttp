@@ -300,10 +300,11 @@ public function getAll(string $name="");
 public function getGany(callable $callback);
 
 /**
- * 下载文件(支持批量)
- * @param  string $name 文件名称,为空自动更具URL识别文件名
+ * 下载文件(目前只支持单文件下载)
  * @param  string $path 保存目录
+ * @param  string $iscommand 是否为命令行执行(命令行执行会显示进度)
+ * @param  string $name 文件名称,为空自动更具URL识别文件名
  * @return string       
  */
-public function getDownload($name=null, $path);
+public function getDownload($path, $iscommand=false, $name=null)
 ```
