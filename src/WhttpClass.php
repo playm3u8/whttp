@@ -8,8 +8,6 @@
 // +----------------------------------------------------------------------
 namespace PL;
 use Exception;
-use ProgressBar\Manager;
-use ProgressBar\Registry;
 
 class WhttpClass
 {
@@ -56,10 +54,10 @@ class WhttpClass
     private $call_return = Null;
 
     /**
-     * progressBar
-     * @var [type]
+     * 是否为命令行执行
+     * @var boolean
      */
-    private $progressBar;
+    private $iscommand = false;
 
     /**
      * 默认请求头
@@ -271,8 +269,7 @@ class WhttpClass
      */
     public function getDownload($path, $iscommand=false, $name=null)
     {
-        $this->progressBar = new Manager(0, 100);
-        $this->progressBar->setFormat('Progress : [%bar%] %percent%% %eta%');
+        $this->iscommand = $iscommand;
         $this->method['fp_name'] = $name;
         // 检查保存路径的完整性
         if (empty($path)) {
@@ -283,6 +280,16 @@ class WhttpClass
         $this->method['fp_path'] = $path;
         // 发送请求
         $return = $this->send($this->config($this->method));
+        // 下载完成了输出100%
+        if(empty($return['error'])){
+            if ($this->iscommand) {
+                printf("progress: [%-50s] %d%% Done\r"."\n", str_repeat('#',100/100*50), 100/100*100);
+            }
+        } else {
+            if ($this->iscommand) {
+                printf("\n");
+            }       
+        }
         return $return;
     }
 
@@ -651,10 +658,12 @@ class WhttpClass
             // 下载处理(单URL请求)
             if (count($urls) == 1) {
                 if (!empty($out['fp_path'])) {
-                    // 开启进度条
-                    $options[CURLOPT_NOPROGRESS] = false;
-                    // 进度条的触发函数
-                    $options[CURLOPT_PROGRESSFUNCTION] = [$this, 'parent::progress'];
+                    if($this->iscommand) {
+                        // 开启进度条
+                        $options[CURLOPT_NOPROGRESS] = false;
+                        // 进度条的触发函数
+                        $options[CURLOPT_PROGRESSFUNCTION] = [$this, 'parent::progress'];
+                    }
                     // 数据下载触发函数
                     $options[CURLOPT_WRITEFUNCTION] = [$this, 'parent::receiveDownload'];
                 }
@@ -960,10 +969,6 @@ class WhttpClass
         // 开始计算
         $bar = $currentDownloadSize / $countDownloadSize * 100;
         $bar = (int)round($bar, 2);
-        if ($bar < 100 ) {
-            $this->progressBar->update($bar);
-        } else {
-            echo "\n";
-        }
+        printf("progress: [%-50s] %d%% Done\r", str_repeat('#',$bar/100*50), $bar/100*100);
     }
 }
