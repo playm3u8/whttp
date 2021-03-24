@@ -553,15 +553,23 @@ class WhttpClass
                 $return[$id]['host']  = $host;
                 $return[$id]['info']  = $info;
                 // 只要exec为空就获取下错误信息，没有就是正常的
-                $return[$id]['error'] = curl_error($ch);
-                // 处理响应数据
-                $dataExec = $this->getExec($exec, $info, $op[(string)$ch], $ch);
-                // 获取响应头部
-                $return[$id]['headers']  = $dataExec['headers'];
-                // 获取响应内容
-                $return[$id]['body']     = $dataExec['body'];
-                // 下载信息
-                $return[$id]['download'] = $dataExec['download'];
+                $return[$id]['error'] = $error;
+                if (empty($error)) {
+                    // 处理响应数据
+                    $dataExec = $this->getExec($exec, $info, $op[(string)$ch], $ch);
+                    // 获取响应头部
+                    $return[$id]['headers']  = $dataExec['headers'];
+                    // 获取响应内容
+                    $return[$id]['body']     = $dataExec['body'];
+                    // 下载信息
+                    $return[$id]['download'] = $dataExec['download'];
+                } else {
+                    // 下面的失败输出的信息
+                    $return[$id]['headers']  = [];
+                    $return[$id]['body']     = null;
+                    $return[$id]['download'] = ['name'=>pathinfo(parse_url($info['url'] ,
+                        PHP_URL_PATH),PATHINFO_BASENAME),'state'=>false,'path'=>null];
+                }
                 // 回调处理方式
                 if (is_callable($this->callback)) {
                     // 请求句柄
