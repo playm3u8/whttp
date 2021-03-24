@@ -40,10 +40,6 @@ class Whttp extends WhttpClass
         'cookie'    => ['string'],   
         // 请求cookie
 
-        'timeout'   => ['integer', 'integer|NULL'],
-        // 默认超时时间都是5秒
-        // 超时时间(参数1响应超时、参数2连接超时)默认设置一个参数是请求超时，支持数组(秒)
-
         'timeoutms' => ['integer', 'integer|NULL'],
         // 默认超时时间都是5000毫秒
         // 超时时间(参数1响应超时、参数2连接超时)默认设置一个参数是请求超时，支持数组(毫秒)
@@ -80,6 +76,18 @@ class Whttp extends WhttpClass
         
         'writefunc' => ['callable'],    
         // 回调方法,可以干预实时获取的内容,有2个参数 function($ch,$exec){}
+        
+        'savepath'  => ['string'],
+        // 下载保存的路径
+        
+        'savename'  => ['string'],
+        // 下载保存文件名称(批量下载无效)(默认下载地址获取文件名称)
+        
+        'iscommand' => ['NULL'],
+        // 是否为命令行
+        
+        'concurrent' => ['integer|NULL'],
+        // 设置并发数量限制(默认为10)
     ];
 
     // 返回方法说明
@@ -137,13 +145,13 @@ class Whttp extends WhttpClass
     // public function getGany(callable $callback);
 
     /**
-     * 下载文件(目前只支持单文件下载)
-     * @param  string $path 保存目录
-     * @param  string $iscommand 是否为命令行执行(命令行执行会显示进度)
-     * @param  string $name 文件名称,为空自动更具URL识别文件名
-     * @return string       
+     * 下载文件(批量下载无法显示进度)
+     * @Author   laoge
+     * @DateTime 2021-03-23
+     * @param    callable   $callback  回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
+     * @return   array                 
      */
-    // public function getDownload($path, $iscommand=false, $name=null)
+    // public function getDownload(callable $callback=null)
 
     /**
      * 魔术方法 有不存在的操作的时候执行

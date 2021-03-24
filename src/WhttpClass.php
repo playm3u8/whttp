@@ -12,6 +12,24 @@ use Exception;
 class WhttpClass
 {
     /**
+     * 并发默认最高数量
+     * @var integer
+     */
+    private $maxConcurrent = 10;
+
+    /**
+     * 并发执行计数
+     * @var integer
+     */
+    private $currentIndex  = 0;
+
+    /**
+     * 并发请求完成数量
+     * @var integer
+     */
+    private $complete = 0;
+
+    /**
      * 请求响应数据
      * @var array
      */
@@ -51,6 +69,10 @@ class WhttpClass
      */
     private $fptmp;
 
+    /**
+     * 回调返回结果
+     * @var null
+     */
     private $call_return = Null;
 
     /**
@@ -249,7 +271,7 @@ class WhttpClass
      * 回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
      * @param  callable $callback 回调函数
      */
-    public function getGany($callback) 
+    public function getGany(callable $callback) 
     { 
         $this->callback = $callback;
         // 处理配置信息
@@ -261,34 +283,60 @@ class WhttpClass
     }
 
     /**
-     * 下载文件(目前只支持单文件下载)
-     * @param  string $path 保存目录
-     * @param  string $iscommand 是否为命令行执行(命令行执行会显示进度)
-     * @param  string $name 文件名称,为空自动更具URL识别文件名
-     * @return string       
+     * 下载文件(批量下载无法显示进度)
+     * @Author   laoge
+     * @DateTime 2021-03-23
+     * @param    callable   $callback  回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
+     * @return   array                 
      */
-    public function getDownload($path, $iscommand=false, $name=null)
+    public function getDownload(callable $callback=null)
     {
-        $this->iscommand = $iscommand;
-        $this->method['fp_name'] = $name;
+        $this->iscommand = isset($this->method['iscommand'])? true:false;
+        $path = isset($this->method['savepath'])? $this->method['savepath']:"";
+        $name = isset($this->method['savename'])? $this->method['savename']:"";
+
+        // 移除无用参数
+        unset($this->method['savepath']);
+        unset($this->method['savename']);
+
         // 检查保存路径的完整性
         if (empty($path)) {
             $this->Error("保存文件路径不能为空");
-        } elseif(substr($path, -1) != "/") {
+        } 
+
+        // 补上/
+        if(substr($path, -1) != "/") {
             $path = $path."/";
         }
         $this->method['fp_path'] = $path;
+
+        // 批量
+        if (gettype($this->method['url']) == 'array') {
+            $this->callback = $callback;
+        } else {
+            // 单文件下载才能指定下载名称
+            $this->method['fp_name'] = $name;
+        }
+
         // 发送请求
         $return = $this->send($this->config($this->method));
-        // 下载完成了输出100%
-        if(empty($return['error'])){
-            if ($this->iscommand) {
-                printf("progress: [%-50s] %d%% Done\r"."\n", str_repeat('#',100/100*50), 100/100*100);
+
+        // 处理单发
+        if (gettype($this->method['url']) == 'string') {
+            // 下载完成了输出100%
+            if(empty($return['error'])){
+                if ($this->iscommand) {
+                    // 单的下载地址，才会补全进度完成显示
+                    // 补全进度显示
+                    // 在进度回调中有时候下载太快导致不到100%回调就结束了，可能就进度
+                    // 只走到了95%,为了不影响用户体验下面代码就将进度显示到100%
+                    printf("progress: [%-50s] %d%% Done\r"."\n", str_repeat('#',100/100*50), 100/100*100);  
+                }
+            } else {
+                if ($this->iscommand) {
+                    printf("\n");
+                }       
             }
-        } else {
-            if ($this->iscommand) {
-                printf("\n");
-            }       
         }
         return $return;
     }
@@ -307,13 +355,43 @@ class WhttpClass
             // 单一请求
             return $this->single($options);
         } elseif (count($options) > 1) {
-            // 判断是否调用了getGany方法
-            if ($this->callback == Null) {
-                $this->Error('批量处理请使用 "getGany" 方法');
+            // 如果是批量下载就不用getGany
+            if (!isset($this->method['fp_path'])) {
+                // 判断是否调用了getGany方法
+                if ($this->callback == Null) {
+                    $this->Error('批量处理请使用 "getGany" 方法');
+                }
             }
+            $multi = [];
             // 批量请求
-            return $this->multi($options);
+            do {
+                // 计算没事并发执行数量
+                $concurrent = min($this->maxConcurrent, $this->_moreToDo());
+                // printf ("do:".$concurrent."\n");
+                
+                // 发送并发请求
+                $result = $this->multi($options, $concurrent);
+                foreach ($result as $value) {
+                    // 返回的结果数组累计储存起来
+                    $multi[] = $value;
+                }
+            } while($this->_moreToDo());
+            // 返回全部结果
+            return $multi;
         }
+    }
+
+    /**
+     * 获取当前并发进度
+     * @Author   laoge
+     * @DateTime 2021-03-24
+     * @return   integer     执行到第几进度
+     */
+    private function _moreToDo()
+    {
+        $result = count($this->method['url']) - $this->currentIndex;
+        // printf("_moreToDo:".$result."\n");
+        return $result;
     }
 
     /**
@@ -362,10 +440,7 @@ class WhttpClass
         // 初始化
         $ch = curl_init();
         // 临时文件
-        if (!empty($this->method['fp_path']))
-        {
-            $this->fptmp[(string)$ch] = tmpfile();
-        }
+        if(!empty($this->method['fp_path'])) $this->fptmp[(string)$ch] = tmpfile();
         curl_setopt_array($ch, $options[0]);
         // 发送请求
         $this->data['exec'] = curl_exec($ch);
@@ -423,21 +498,26 @@ class WhttpClass
      * @param  array $options 配置
      * @return array          
      */
-    private function multi($options) 
+    private function multi($options, $num) 
     {
         $op = [];
         // 初始化(并发)
         $mh = curl_multi_init();
-        // 批量设置
-        foreach ($options as $value) {
+        // 批量赋值
+        while ($num-- > 0) {
             // 初始化
             $ch = curl_init();
             // 记录 options
-            $op[(string)$ch] = $value;
+            $op[(string)$ch] = $options[$this->currentIndex];
             // 设置 options
-            curl_setopt_array($ch, $value);
+            curl_setopt_array($ch, $options[$this->currentIndex]);
             // 添加到并发处理
             curl_multi_add_handle($mh, $ch);
+            // 生成临时下载文件句柄
+            if(!empty($this->method['fp_path'])) $this->fptmp[(string)$ch] = tmpfile();
+            // 记录请求次数
+            $this->currentIndex++;
+            // printf("multi:".$this->currentIndex."\n");
         }
         // 并发处理
         $return   = [];
@@ -465,11 +545,15 @@ class WhttpClass
                 } else {
                     $exec         = curl_multi_getcontent($ch);
                 }
+                // 如果是批量下载就exec转boolean类型，方便提取下载数据
+                // 如果是批量下载exec就会返回true,(这里是为了和单地址请求统一)
+                if(!empty($this->method['fp_path'])) $exec = true;
                 // 请求句柄
                 $return[$id]['id']    = (int) $ch;
                 $return[$id]['host']  = $host;
                 $return[$id]['info']  = $info;
-                $return[$id]['error'] = empty($exec)? curl_error($ch) : Null;
+                // 只要exec为空就获取下错误信息，没有就是正常的
+                $return[$id]['error'] = curl_error($ch);
                 // 处理响应数据
                 $dataExec = $this->getExec($exec, $info, $op[(string)$ch], $ch);
                 // 获取响应头部
@@ -488,6 +572,11 @@ class WhttpClass
                     $func['error']   = $return[$id]['error'];
                     $func['headers'] = $return[$id]['headers'];
                     $func['body']    = $return[$id]['body'];
+                    $func['download']= $return[$id]['download'];
+                    // 输出请求信息
+                    $func['request'] = $this->method;
+                    // 计数用的
+                    $func['complete'] = $this->complete++;
                     $call_return = call_user_func_array($this->callback, array($func));
                     if ($call_return) {
                         $this->call_return[] = $call_return;
@@ -550,6 +639,7 @@ class WhttpClass
     {
         // 开始下载
         if (!empty($this->fptmp[(string)$ch])) {
+            // 根据句柄把数据写入到临时目录
             return fwrite($this->fptmp[(string)$ch], $exec);
         } else {
             // 断开连接
@@ -586,6 +676,14 @@ class WhttpClass
             $urls[0] = $out['url'];
         } else {
             return [];
+        }
+        // 设置并发数
+        if(array_key_exists('concurrent' ,$this->method)){
+            if($this->method['concurrent'] > 1){
+                $this->maxConcurrent = $this->method['concurrent'];
+            } else {
+                $this->Error("并发数必须大于1");
+            }
         }
         // 批量配置请求INFO
         foreach ($urls as $id => $url) {
@@ -655,19 +753,7 @@ class WhttpClass
                     $options[CURLOPT_WRITEFUNCTION] = [$this, 'parent::receiveResponse'];
                 }
             }
-            // 下载处理(单URL请求)
-            if (count($urls) == 1) {
-                if (!empty($out['fp_path'])) {
-                    if($this->iscommand) {
-                        // 开启进度条
-                        $options[CURLOPT_NOPROGRESS] = false;
-                        // 进度条的触发函数
-                        $options[CURLOPT_PROGRESSFUNCTION] = [$this, 'parent::progress'];
-                    }
-                    // 数据下载触发函数
-                    $options[CURLOPT_WRITEFUNCTION] = [$this, 'parent::receiveDownload'];
-                }
-            }
+
             // 处理提交数据
             if (in_array($out['method'], ['POST','PUT','PATCH','DELETE'])) {
                 // 设置请求类型
@@ -686,43 +772,43 @@ class WhttpClass
             }
             // 设置Cookie
             if(!empty($out['cookie'])) $options[CURLOPT_COOKIE] = $out['cookie'];
-
-            // 设置超时时间
-            if (array_key_exists('timeoutms', $out) && array_key_exists('timeout', $out)) {
-                $this->Error("不能同时设置'请求超时'和'连接超时'");
+            // 下载处理
+            if (isset($out['fp_path'])) {
+                // 单地址下载可能显示进度
+                if (count($urls) == 1) {
+                    if($this->iscommand) {
+                        // 开启进度条
+                        $options[CURLOPT_NOPROGRESS] = false;
+                        // 进度条的触发函数
+                        $options[CURLOPT_PROGRESSFUNCTION] = [$this, 'parent::progress'];
+                    }
+                }
+                // 数据下载触发函数
+                $options[CURLOPT_WRITEFUNCTION] = [$this, 'parent::receiveDownload'];
+                // 如果是下载文件，那么超时时间就默认无线等待
+                $options[CURLOPT_TIMEOUT_MS] = 0;
+                $options[CURLOPT_CONNECTTIMEOUT_MS] = 1000*60;
             }
 
-            if (array_key_exists('timeout', $out)) $out['timeoutms'] = $out['timeout'];
-            
+            // 如果设置了超时时间就会按照超时时间来执行
             if(array_key_exists('timeoutms', $out)) {
+
                 if (gettype($out['timeoutms']) == 'integer') {
                     // 设置请求超时
-                    if (array_key_exists('timeout', $out)){
-                        $options[CURLOPT_TIMEOUT_MS] = $out['timeoutms']*1000;
-                    } else {
-                        $options[CURLOPT_TIMEOUT_MS] = $out['timeoutms'];
-                    }
-                } elseif (gettype($out['timeoutms']) == 'array') 
-                {
-                    if (!empty($out['timeoutms'][0])){
+                    $options[CURLOPT_TIMEOUT_MS] = $out['timeoutms'];
+                    
+                } elseif (gettype($out['timeoutms']) == 'array') {
+
+                    if (isset($out['timeoutms'][0])){
                         // 设置请求超时
-                        if (array_key_exists('timeout', $out)){
-                            $options[CURLOPT_TIMEOUT_MS] = $out['timeoutms'][0]*1000;
-                        } else {
-                            $options[CURLOPT_TIMEOUT_MS] = $out['timeoutms'][0];
-                        }
+                        $options[CURLOPT_TIMEOUT_MS] = $out['timeoutms'][0];
                     }
-                    if (!empty($out['timeoutms'][1])){
+                    if (isset($out['timeoutms'][1])){
                         // 设置连接超时
-                        if (array_key_exists('timeout', $out)){
-                            $options[CURLOPT_CONNECTTIMEOUT_MS] = $out['timeoutms'][1]*1000;
-                        } else {
-                            $options[CURLOPT_CONNECTTIMEOUT_MS] = $out['timeoutms'][1];
-                        }
+                        $options[CURLOPT_CONNECTTIMEOUT_MS] = $out['timeoutms'][1];
                     }
                 }
             }
-            if (array_key_exists('timeout', $out)) unset($out['timeout']);
 
             // 设置代理
             if (!empty($out['proxy'])) {
@@ -771,6 +857,7 @@ class WhttpClass
     private function getExec($exec, $info, $options, $ch)
     {
         $data = [
+            'error'    => null,
             'body'     => null,
             'headers'  => null,
             'download' => ['state' => false, 'path' => null],
@@ -783,6 +870,7 @@ class WhttpClass
             }
             return $data; 
         } 
+
         // 无响应头请求
         if($options[CURLOPT_HEADER] == false) {
             // 直接输出
@@ -812,11 +900,12 @@ class WhttpClass
                 if (gettype($data['body']) == 'boolean') {
 
                     if(!$fp = fopen($this->method['fp_path'].$name, "w")) {
-
                         fclose($this->fptmp[(string)$ch]);
                         // 输出下载信息
+                        $data['error'] = "写入失败";
                         $data['download']['state'] = false;
-                        $data['download']['path']  = "写入失败";
+                        $data['download']['path']  = null;
+                        $data['download']['name']  = $name;
                     } else {
                         fseek($this->fptmp[(string)$ch], 0);
                         $download_length = $this->pipe_streams($this->fptmp[(string)$ch], $fp);
@@ -826,30 +915,21 @@ class WhttpClass
                         // 效验下载大小，输出下载信息
                         if ($download_length != $info['size_download']) {
 
+                            $data['error'] = "下载失败";
                             $data['download']['state'] = false;
-                            $data['download']['path']  = "下载失败";
+                            $data['download']['path']  = null;
+                            $data['download']['name']  = $name;
 
                         } else {
                             $data['download']['state'] = true;
                             $data['download']['path']  = $this->method['fp_path'].$name;
+                            $data['download']['name']  = $name;
                         }
                     }
 
-                } else {
-                    // 下面代码无效的，还没写好。
-                    if (!$down = download($data['body'],$name,$this->method['fp_path'])) 
-                    {
-                        $data['download']['state'] = false;
-                        $data['download']['path']  = "批量下载失败";
-                    } else {
-
-                        $data['download']['state'] = true;
-                        $data['download']['path'] = $this->method['fp_path'].$name;
-                    }
-
-                    // 删除body数据
-                    $data['body'] = true;
                 }
+                // 删除body数据，做好标签在指定的地方删除
+                $data['body'] = true;
             }
 
         } else {

@@ -14,9 +14,9 @@ use PL\Whttp;
 // GET:
 $http = Whttp::get('https://www.baidu.com');
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getBody();
+    $http = $http->getBody();
 }
 p($http,true);
 ```
@@ -24,9 +24,9 @@ p($http,true);
 // POST:
 $http = Whttp::post('https://www.baidu.com',['name'=>'playm3u8']);
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getBody();
+    $http = $http->getBody();
 }
 p($http,true);
 ```
@@ -34,9 +34,9 @@ p($http,true);
 // PUT:
 $http = Whttp::put('https://www.baidu.com',['name'=>'playm3u8']);
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getBody();
+    $http = $http->getBody();
 }
 p($http,true);
 ```
@@ -44,9 +44,9 @@ p($http,true);
 // PATCH:
 $http = Whttp::patch('https://www.baidu.com',['name'=>'playm3u8']);
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getBody();
+    $http = $http->getBody();
 }
 p($http,true);
 ```
@@ -54,9 +54,9 @@ p($http,true);
 // DELETE:
 $http = Whttp::delete('https://www.baidu.com',['name'=>'playm3u8']);
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getBody();
+    $http = $http->getBody();
 }
 p($http,true);
 ```
@@ -64,9 +64,9 @@ p($http,true);
 ```php
 $http = Whttp::get('https://www.baidu.com')->cookie('user=playm3u8');
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getBody();
+    $http = $http->getBody();
 }
 p($http,true);
 ```
@@ -74,9 +74,9 @@ p($http,true);
 ```php
 $http = Whttp::get('https://www.baidu.com')->nobody(true);
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getHeaders();
+    $http = $http->getHeaders();
 }
 p($http,true);
 ```
@@ -84,9 +84,9 @@ p($http,true);
 ```php
 $http = Whttp::get('https://www.baidu.com');
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getCode();
+    $http = $http->getCode();
 }
 p($http,true);
 ```
@@ -94,9 +94,9 @@ p($http,true);
 ```php
 $http = Whttp::get('https://www.baidu.com');
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getInfo();
+    $http = $http->getInfo();
 }
 p($http,true);
 ```
@@ -104,43 +104,64 @@ p($http,true);
 ```php
 $http = Whttp::get('http://route.showapi.com/6-1');
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getJson();
+    $http = $http->getJson();
 }
 p($http,true);
 ```
 *8. 批量处理URL*
 ```php
 $urls = array(
-	'http://route.showapi.com/6-1',
-	'http://route.showapi.com/6-1',
-	'http://route.showapi.com/6-1',
+    'http://route.showapi.com/6-1',
+    'http://route.showapi.com/6-1',
+    'http://route.showapi.com/6-1',
 );
 Whttp::get($urls)->getGany(function($data){
-	if($data['error']){
-		echo "error: ".$data['error']."<br>";
-	} else {
-		// 不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
-		p($data);
-	}
-	// 可以吧数据返回出去
-	// return "sssss";
+    if($data['error']){
+        echo "error: ".$data['error']."<br>";
+    } else {
+        // 不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
+        p($data);
+    }
+    // 可以吧数据返回出去
+    // return "sssss";
 });
 ```
-*9. 下载文件(目前只支持单文件下载)*
+*9. 下载文件*
 ```php
 // 单个URL
-$url = 'https://dldir1.qq.com/weixin/Windows/WeChatSetup.exe';
-$http = Whttp::get($url)->timeout(60);
+$url = 'https://www.baidu.com/index.html';
+$http = Whttp::get($url);
 // 开始下载
 $http->getDownload();
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getAll('download');
+    $http = $http->getAll('download');
 }
 p($http,true);
+// (简单)批量, 建议在命令行模式下运行
+$url[] = 'https://www.baidu.com/index.html';
+$url[] = 'https://www.baidu.com/index.html';
+$url[] = 'https://www.baidu.com/index.html';
+$rsult = Whttp::get($url)
+    ->iscommand()
+    ->savepath($path)
+    ->concurrent(10)
+    ->getDownload(Function($data) {
+        if($data['error']){
+            echo "error: ".$data['error']."\n";
+        } else {
+            // 不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
+            p($data['download']);
+        }
+        // 可以吧数据修改了返回出去
+        $data['download']['state'] = 123;
+        return $data;
+    }
+);
+p($result,true);
 ```
 *9. 上传文件*
 ```php
@@ -161,15 +182,15 @@ p($http->getJson(), true);
 ```php
 $urls = 'https://www.baidu.com';
 $http = Whttp::get($urls)->writefunc(function($ch, $exec){
-	// 一段一段的读取，可以用来响应数据进行分析
-	echo $exec;
-	// 必须要,断开连接返回false
-	return true;
+    // 一段一段的读取，可以用来响应数据进行分析
+    echo $exec;
+    // 必须要,断开连接返回false
+    return true;
 });
 if ($http->getError()) {
-	$http = "error: ".$http->getError();
+    $http = "error: ".$http->getError();
 } else {
-	$http = $http->getBody();
+    $http = $http->getBody();
 }
 p($http,true);
 ```
@@ -201,10 +222,6 @@ protected static $setlist1 = array(
 
     'cookie'    => ['string'],   
     // 请求cookie
-
-    'timeout'   => ['integer', 'integer|NULL'],
-    // 默认超时时间都是5秒
-    // 超时时间(参数1响应超时、参数2连接超时)默认设置一个参数是请求超时，支持数组(秒)
 
     'timeoutms' => ['integer', 'integer|NULL'],
     // 默认超时时间都是5000毫秒
@@ -300,11 +317,11 @@ public function getAll(string $name="");
 public function getGany(callable $callback);
 
 /**
- * 下载文件(目前只支持单文件下载)
- * @param  string $path 保存目录
- * @param  string $iscommand 是否为命令行执行(命令行执行会显示进度)
- * @param  string $name 文件名称,为空自动更具URL识别文件名
- * @return string       
+ * 下载文件(批量下载无法显示进度)
+ * @Author   laoge
+ * @DateTime 2021-03-23
+ * @param    callable   $callback  回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
+ * @return   array                 
  */
-public function getDownload($path, $iscommand=false, $name=null)
+public function getDownload(callable $callback=null)
 ```
