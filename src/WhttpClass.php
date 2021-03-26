@@ -291,6 +291,7 @@ class WhttpClass
      */
     public function getDownload(callable $callback=null)
     {
+        $this->method['fp_name'] = "";
         $this->iscommand = isset($this->method['iscommand'])? true:false;
         $path = isset($this->method['savepath'])? $this->method['savepath']:"";
         $name = isset($this->method['savename'])? $this->method['savename']:"";
