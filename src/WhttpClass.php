@@ -336,13 +336,7 @@ class WhttpClass
      */
     public function getDownload(callable $callback=null)
     {
-        $this->method['fp_name'] = "";
         $path = isset($this->method['savepath'])? $this->method['savepath']:"";
-        $name = isset($this->method['savename'])? $this->method['savename']:"";
-
-        // 移除无用参数
-        unset($this->method['savepath']);
-        unset($this->method['savename']);
 
         // 检查保存路径的完整性
         if (empty($path)) {
@@ -358,9 +352,6 @@ class WhttpClass
         // 批量
         if (gettype($this->method['url']) == 'array') {
             $this->callback = $callback;
-        } else {
-            // 单文件下载才能指定下载名称
-            $this->method['fp_name'] = $name;
         }
 
         // 发送请求
@@ -470,7 +461,10 @@ class WhttpClass
         // 初始化
         $ch = curl_init();
         // 临时文件
-        if(!empty($this->method['fp_path'])) $this->fptmp[(string)$ch] = tmpfile();
+        if(!empty($this->method['fp_path'])) {
+            $this->fptmp[(string)$ch] = tmpfile();
+            $this->method['fp_name']  = isset($this->method['savename'])? $this->method['savename']:"";
+        }
         curl_setopt_array($ch, $options[0]);
         // 发送请求
         $this->data['exec'] = curl_exec($ch);
@@ -609,7 +603,7 @@ class WhttpClass
                     // 下面的失败输出的信息
                     $return[$id]['headers']  = [];
                     $return[$id]['body']     = null;
-                    $return[$id]['download'] = ['name'=>pathinfo(parse_url($info['url'] ,
+                    $return[$id]['download'] = ['name'=>pathinfo(parse_url($op[(string)$ch][CURLOPT_URL] ,
                         PHP_URL_PATH),PATHINFO_BASENAME),'state'=>false,'path'=>null];
                 }
                 // 回调处理方式
@@ -720,8 +714,13 @@ class WhttpClass
         }
         // 处理多批量URL
         if (!$out) return [];
-        if (gettype($out['url']) == 'array') {
-            $urls    = $out['url'];
+        if (gettype($out['url']) == 'array') 
+        {
+            if(count($out['url']) > 1){
+                $urls    = $out['url'];
+            } else {
+                $urls[0] = $out['url'][0];
+            }
         } elseif (gettype($out['url']) == 'string') {
             $urls[0] = $out['url'];
         } else {
@@ -930,16 +929,17 @@ class WhttpClass
             if (!empty($this->method['fp_path'])) {
 
                 // 保存到指定位置
-                $name = $this->method['fp_name'];
+                $name = isset($this->method['fp_name'])? $this->method['fp_name']:"";
+
                 if (empty($name)) 
                 {
-                    $name = pathinfo(parse_url($info['url'] ,PHP_URL_PATH),PATHINFO_BASENAME);
-
+                    $name = pathinfo(parse_url($options[CURLOPT_URL] ,PHP_URL_PATH),PATHINFO_BASENAME);
                     if(empty($name)) {
                         // 获取失败直接关闭临时文件
                         $name = parse_url($info['url'], PHP_URL_HOST);
                     }
                 }
+
                 // 保存文件到指定位置
                 if(!file_exists($this->method['fp_path'])) 
                 {
