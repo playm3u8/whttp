@@ -1,4 +1,5 @@
 <?php
+
 // 函数助手
 require_once '../autoload.php';
 use PL\Whttp;
@@ -26,5 +27,5 @@ $default = [
 // p($header,true);
 
 // exit;
-$result = Whttp::get('http://10.0.0.2/whttp/demo/test.php')->timeoutms(1000)->cache($default)->getAll();
+$result = Whttp::get('http://10.0.0.2/whttp/demo/test.php')->jump()->nobody()->getAll();
 p($result);

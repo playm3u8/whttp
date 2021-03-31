@@ -165,7 +165,12 @@ class WhttpClass
             // 为2个或2个以上的对比了
             // 根据约束的参数类型做对比
             for ($i=0; $i < count($filter); $i++) { 
-                if(strpos($filter[$i], gettype($params[$i])) === false){
+                if(!$params) {
+                    $type = 'NULL';
+                } else {
+                    $type = gettype($params[$i]);
+                }
+                if(strpos($filter[$i], $type) === false){
                     $isTrue = false;
                     break;
                 }
