@@ -76,16 +76,22 @@ class WhttpClass
     private $call_return = Null;
 
     /**
-     * 是否为命令行执行
-     * @var boolean
-     */
-    private $iscommand = false;
-
-    /**
      * 默认请求头
      * @var array
      */
     private $default_header = ['Accept-Encoding: gzip'];
+
+    /**
+     * 默认Redis配置
+     * @var array
+     */
+    private $redis_config = [
+        'host'    => '127.0.0.1',
+        'pass'    => '',
+        'expire'  => 60,
+        'count'   => 0,      // 允许超时请求次数 0不限制
+        'overtimedue' => 60, // 超时请求高于次数设置的缓存时间（秒）
+    ];
 
     /**
      * 魔术方法 有不存在的操作的时候执行
@@ -98,9 +104,18 @@ class WhttpClass
     {
         $array = null;
         if (isset($func)) {
-            $pname   = strtolower($func);
+            // 方法
+            $func   = strtolower($func);
+            // 合并参数约束
             $setlist = array_merge($this->setlist2, Whttp::$setlist1);
-            if (in_array($pname, array_keys($setlist))) {
+            if (in_array($func, array_keys($setlist))) {
+                // 得到方法的设置参数变量类型
+                $filter = $setlist[$func];
+                // 第一步 对比参数的数量
+                $this->InspectionQuantity($filter, $params, $func);
+                // 第二步 对比每个参数的变量类型
+                $this->TypeComparison($filter, $params, $func);
+                // 第三步 处理方法参数二级转为一级
                 if (count($params) == 1) {
                     $array = $params[0];
                 } else {
@@ -112,57 +127,87 @@ class WhttpClass
                         }
                     }
                 }
-                // 参数数量和类型
-                $value = $setlist[$pname];
-                // URL和DATA参数只约束类型不限制数量
-                if ($pname == 'url' || $pname == 'data') goto end;
-                // 不为数组的全部为单参数
-                $count1 = (gettype($array) != 'array')? 1:count($array);
-                // 约束参数数量
-                if ($count1 != count($value) && !in_array($pname,['url','data','header'])) {
-                    // url,data,header参数不限制
-                    if ($count1 > count($value)) {
-                        $this->Error($pname.':传入的参数太多');
-                    }
-                    for ($i=0; $i < count($value); $i++) { 
-                        if(strpos($value[$i], "NULL") === false) { 
-                            // 必要参数
-                            if ($i+1 > $count1){
-                                $this->Error($pname.':参数'.($i+1).'不能为空');
-                            }
-                        }
-                    }
-                }
-                // 参数类型约束
-                if (gettype($array) != 'array') {
-                    // 单个参数的
-                    end:
-                    if(strpos($value[0], gettype($array)) === false){ 
-                        $this->Error($pname.':传入参数类型有误');
-                    } 
-                } else {
-                    // header排除外，以为是数组有多个
-                    if (!in_array($pname,['header'])){
-                        // 多个参数的
-                        for ($i=0; $i < count($value); $i++) { 
-                            if (strpos($value[$i], gettype($array[$i])) === false) {
-                                $this->Error($pname.':传入参数'.($i+1).'类型有误');
-                            }
-                        }
-                    }
-                }
-                // 约束重复的参数
+                // 第四步 约束重复的参数
                 if ($this->method) {
-                    if (in_array($pname, array_keys($this->method))) {
-                        $this->Error('参数'.$pname.'被重复设置');
+                    if (in_array($func, array_keys($this->method))) {
+                        $this->Error('参数['.$func.'()]被重复设置');
                     }
                 }
-                $this->method[$pname] = $array;
+                $this->method[$func] = $array;
             } else {
-                $this->Error('似乎没有'.$pname.'成员');
+                $this->Error('内置似乎没有['.$func.'()]方法');
             }
         }
         return $this;
+    }
+
+    /**
+     * 方法设置的参数类型对比
+     * @Author   laoge
+     * @DateTime 2021-03-30
+     * @param    array      $filter 约束的参数
+     * @param    array      $params 方法设置的参数
+     * @param    string     $func   方法名称
+     * @return   null
+     */
+    private function TypeComparison(array $filter, array $params, string $func)
+    {
+        $isTrue = true;
+        if (count($params) == 1) {
+            // 数组一级下为一个的不是字符串就是数组,所以要区分开
+            // 但是都是一个参数
+            $type1 = $filter[0];
+            $type2 = gettype($params[0]);
+            if(strpos($type1, $type2) === false){ 
+                $isTrue = false;
+            }
+        } else {
+            // 为2个或2个以上的对比了
+            // 根据约束的参数类型做对比
+            for ($i=0; $i < count($filter); $i++) { 
+                if(strpos($filter[$i], gettype($params[$i])) === false){
+                    $isTrue = false;
+                    break;
+                }
+            }
+        }
+        if($isTrue == false) {
+            $msg = implode(",", $filter);
+            $this->Error("[{$func}]参数类型有误,此方法类型有: {$func}({$msg})");
+        }
+    }
+
+    /**
+     * 方法设置的参数数量对比
+     * @Author   laoge
+     * @DateTime 2021-03-30
+     * @param    array      $filter 约束的参数
+     * @param    array      $params 方法设置的参数
+     * @param    string     $func   方法名称
+     * @return   null
+     */
+    private function InspectionQuantity(array $filter, array $params, string $func)
+    {
+        // 获取方法传递参数数量
+        $func_count   = count($params);
+        // 得到约束参数数量
+        $filter_count = count($filter);
+        // 开始对比
+        if ($func_count > $filter_count){
+            // 参数数量不对
+            $msg = implode(",", $filter);
+            $this->Error("[{$func}]参数过多: {$func}({$msg})");
+        } else {
+            for ($i=0; $i < count($filter); $i++) { 
+                if(strpos($filter[$i], "NULL") === false) { 
+                    // 必要参数
+                    if ($i+1 > $func_count){
+                        $msg = implode(",", $filter);
+                        $this->Error("[{$func}]参数".($i+1)."不能为空: {$func}({$msg})");
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -292,7 +337,6 @@ class WhttpClass
     public function getDownload(callable $callback=null)
     {
         $this->method['fp_name'] = "";
-        $this->iscommand = isset($this->method['iscommand'])? true:false;
         $path = isset($this->method['savepath'])? $this->method['savepath']:"";
         $name = isset($this->method['savename'])? $this->method['savename']:"";
 
@@ -326,7 +370,7 @@ class WhttpClass
         if (gettype($this->method['url']) == 'string') {
             // 下载完成了输出100%
             if(empty($return['error'])){
-                if ($this->iscommand) {
+                if (runningInConsole()) {
                     // 单的下载地址，才会补全进度完成显示
                     // 补全进度显示
                     // 在进度回调中有时候下载太快导致不到100%回调就结束了，可能就进度
@@ -334,9 +378,7 @@ class WhttpClass
                     printf("progress: [%-50s] %d%% Done\r"."\n", str_repeat('#',100/100*50), 100/100*100);  
                 }
             } else {
-                if ($this->iscommand) {
-                    printf("\n");
-                }       
+                if (runningInConsole()) printf("\n");
             }
         }
         return $return;
@@ -402,35 +444,22 @@ class WhttpClass
      */
     private function single($options) 
     {
-        // 缓存ID标示
-        $cacid = $this->getCacheID($options[0]);
         // 识别缓存驱动
-        $ReINFO = empty($this->method['cache'])? Null: $this->method['cache'];
-        if (!empty($ReINFO)) 
-        {
-            // 默认Redis配置
-            $default = [
-                'host'    => '127.0.0.1',
-                'pass'    => '',
-                'expire'  => 60,
-                'count'   => 3,      // 允许超时请求次数
-                'overtimedue' => 60, // 超时请求高于次数设置的缓存时间（秒）
-            ];
-            if (gettype($ReINFO) == 'integer') {
-                // 赋值有效期
-                $default['expire'] = $ReINFO;
-
-            } elseif(gettype($ReINFO) == 'array'){
-                $default['host']        = empty($ReINFO[0])? $default['host']:$ReINFO[0];
-                $default['pass']        = empty($ReINFO[1])? $default['pass']:$ReINFO[1];
-                $default['expire']      = empty($ReINFO[2])? $default['expire']:$ReINFO[2];
-                $default['count']       = empty($ReINFO[3])? $default['count']:$ReINFO[3];
-                $default['overtimedue'] = empty($ReINFO[4])? $default['overtimedue']:$ReINFO[4];
-            } else {
-                $this->Error("缓存配置错误");
-            }
+        if (array_key_exists("cache", $this->method)) {
+            // 检查参数是否正确
+            if (gettype($this->method['cache']) != 'NULL'){
+                if(array_key_exists("0", $this->method['cache'])) {
+                    $this->Error("[cache]参数设置错误,参数1必须包含 'host' key");
+                }
+                // 合并配置
+                foreach ($this->method['cache'] as $key => $value) {
+                    $this->redis_config[$key] = $value;
+                }
+            } 
             // 实例化Redis
-            $predis = new Predis($default);
+            $predis = new Predis($this->redis_config);
+            // 缓存ID标示
+            $cacid = "curlCache_".md5($this->getCacheID($options[0]).$this->redis_config['count'].$this->redis_config['overtimedue']);
             // 判断是否存在
             if ($predis->has($cacid)) {
                 // 获取缓存解压数据
@@ -467,28 +496,40 @@ class WhttpClass
         // 删除无用数据
         unset($this->data['exec']);
         // 如果设置了缓存就进入写入处理
-        if (!empty($ReINFO)) {
+        if (array_key_exists("cache", $this->method)) {
             // 只要不出错，所有数据都加入缓存
             // 连续请求超时次数高于设定次数将进入缓存
-            $count         = $default['count'];   // 次
-            $overtimedue   = $default['overtimedue']; // 秒
-            $curl_error_id = "curl_error_".$cacid;
+            $count         = $this->redis_config['count'];   // 次
+            $overtimedue   = $this->redis_config['overtimedue']; // 秒
+            $curl_error_id = "curl_error_".md5($count.$overtimedue.$cacid);
             if (empty($this->data['error']) || $predis->get($curl_error_id) >= $count-1) {
                 // 设置了超时次数限制就走限制的缓存时间
                 if ($predis->has($curl_error_id)) {
                     // 清除记录
                     $predis->rm($curl_error_id);
-                    $default['expire']   = $overtimedue;
+                    $this->redis_config['expire']   = $overtimedue;
                     $this->data['error'] = "Cache: ".$this->data['error'];
                 }
-                $predis->set($cacid, gzdeflate(serialize($this->data)), $default['expire']);
+                $predis->set($cacid, gzdeflate(serialize($this->data)), $this->redis_config['expire']);
             } else {
+                if ($this->redis_config['count'] > 0){
+                    // 只要是错误就记录，不限于请求超时上
+                    if (!empty($this->data['error'])) {
+                        // 请求超时记录一次
+                        if ($count > 0){
+                            $predis->increment($curl_error_id);
+                        }
+                    }
+                }
+                // 下面的是只有在请求超时上才记录
+/*
                 if (strpos($this->data['error'], "timed out") !== false) {
                     // 请求超时记录一次
                     if ($count > 0){
                         $predis->increment($curl_error_id);
                     }
                 }
+*/
             }
         }
         return $this->data;
@@ -785,7 +826,7 @@ class WhttpClass
             if (isset($out['fp_path'])) {
                 // 单地址下载可能显示进度
                 if (count($urls) == 1) {
-                    if($this->iscommand) {
+                    if(runningInConsole()) {
                         // 开启进度条
                         $options[CURLOPT_NOPROGRESS] = false;
                         // 进度条的触发函数

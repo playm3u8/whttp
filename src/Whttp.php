@@ -71,9 +71,22 @@ class Whttp extends WhttpClass
         'right'     => ['string'],   
         // 截取返回Body指定右边字符
         
-        'cache'     => ['string', 'string|NULL', 'integer', 'integer', 'integer'],
-        // 缓存配置 [IP,密码,缓存时间,限制超时次数,超时超过次数缓存的时间]
-        
+        'cache'     => ['array|NULL'],
+        /* 默认缓存配置(Redis)(为空时就使用下面默认配置)
+        $default = [
+            'host'    => '127.0.0.1',  // Redis连接IP
+            'pass'    => '',           // 密码
+            'expire'  => 60,           // 默认缓存到期时间
+            // 允许失败或超时请求次数
+            // 意思就是请求3次都错误就请求返回空，
+            // 避免服务器高请求导致大量占用资源卡死
+            'count'   => 3,  // 默认0不限制
+            // 超时请求高于次数设置的缓存时间（秒）
+            // 意思就是上面的错误次数后,服务器返回空的时间
+            'overtimedue' => 60,
+        ];
+        */
+
         'writefunc' => ['callable'],    
         // 回调方法,可以干预实时获取的内容,有2个参数 function($ch,$exec){}
         
@@ -82,9 +95,6 @@ class Whttp extends WhttpClass
         
         'savename'  => ['string'],
         // 下载保存文件名称(批量下载无效)(默认下载地址获取文件名称)
-        
-        'iscommand' => ['NULL'],
-        // 是否为命令行
         
         'concurrent' => ['integer|NULL'],
         // 设置并发数量限制(默认为10)
@@ -170,12 +180,11 @@ class Whttp extends WhttpClass
                 } else if (count($params) == 2) {
                     return $class->method($func)->url($params[0])->data($params[1]);
                 } else {
-                    throw new Exception("$func wrong parameter");
+                    throw new Exception("{$func}的参数太多啦");
                 }
             } else {
-                throw new Exception('There seems to be no "'.$func.'" member.');
+                throw new Exception("似乎没有'{$func}'请求模式");
             }
-
         }
     }
 }

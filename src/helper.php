@@ -226,26 +226,25 @@ if (!function_exists('setUrl')) {
 if (!function_exists('fast')) {
     /**
      * 方便快速获取二维数组
-     * @param  array  $data    数据
+     * @param  array  $config  数据
      * @param  string $strName 配置参数名（.号分割）
      * @return array|string       
      */
-    function fast($data, $strName="") 
+    function fast($config, $strName="") 
     {
-        $strArray = "";
-        if (substr($strName, -1) == '.') {
-            $strName = substr($strName, 0, -1);
+        if(empty($strName)) 
+            return $config;
+
+        $name = explode('.', $strName);
+        // 按.拆分成多维数组进行判断
+        foreach ($name as $val) {
+            if (isset($config[$val])) {
+                $config = $config[$val];
+            } else {
+                return null;
+            }
         }
-        if(empty($strName)) return $data;
-        $strName  = explode('.', $strName);
-        for ($i=0; $i < count($strName); $i++) 
-        { 
-            $strArray .= '[$strName['.$i.']]';
-        }
-        eval('$empty = empty($data'.$strArray.');');
-        if($empty) return Null;
-        eval('$data  = $data'.$strArray.';');
-        return $data;
+        return $config;
     }
 }
 
@@ -334,8 +333,13 @@ if (!function_exists('p')) {
      * @param  arr $arr
      * @return string
      */
-    function p($arr, $die=false) {
-        v_dump( $arr , 1 , '<pre>' , 0 );
+    function p($arr, $die=false)
+    {
+        if(gettype($arr) == 'array'){
+            v_dump( $arr , 1 , '<pre>' , 0 );
+        } else {
+            echo $arr;
+        }
         if($die) die;
     }
 }
@@ -778,6 +782,19 @@ if (!function_exists('autHcode')) {
             return $keystr;
         }
     }
+}
+
+if (!function_exists('runningInConsole')) {
+
+    /**
+     * 是否运行在命令行下
+     * @return bool
+     */
+    function runningInConsole()
+    {
+        return php_sapi_name() === 'cli' || php_sapi_name() === 'phpdbg';
+    }
+
 }
 
 if (!function_exists('readTxt')) {
