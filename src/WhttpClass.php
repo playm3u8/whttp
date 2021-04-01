@@ -733,7 +733,7 @@ class WhttpClass
         }
         // 设置并发数
         if(array_key_exists('concurrent' ,$this->method)){
-            if($this->method['concurrent'] > 1){
+            if($this->method['concurrent'] >= 1){
                 $this->maxConcurrent = $this->method['concurrent'];
             } else {
                 $this->Error("并发数必须大于1");
