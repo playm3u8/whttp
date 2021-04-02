@@ -376,6 +376,38 @@ if (!function_exists('uuid')) {
     }
 }
 
+if (!function_exists('parseurlen')) {
+    /**
+     * url地址编码
+     * @Author   laoge
+     * @DateTime 2021-04-02
+     * @param    string     $url [description]
+     * @return   [type]          [description]
+     */
+    function parseurlen($url = ""){
+        $url = rawurlencode($url);
+        $a   = array("%3A", "%2F", "%40", "%3F","%3D","%26");
+        $b   = array(":", "/", "@", "?", "=","&");
+        $url = str_replace($a, $b, $url);
+        return $url;
+    }
+}
+
+if (!function_exists('getUrlfile')) {
+    /**
+     * 获取URL文件名称
+     * @Author   laoge
+     * @DateTime 2021-04-03
+     * @param    [type]     $url [description]
+     * @return   [type]          [description]
+     */
+    function getUrlfile($url){
+
+        return pathinfo(parse_url(rawurldecode($url) ,PHP_URL_PATH),PATHINFO_BASENAME);
+    }
+}
+
+
 if (!function_exists('getRandstr')) {
     /**
      * 生成一个随机的字符串

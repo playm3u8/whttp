@@ -628,8 +628,11 @@ class WhttpClass
                     // 下面的失败输出的信息
                     $return[$id]['headers']  = [];
                     $return[$id]['body']     = null;
-                    $return[$id]['download'] = ['name'=>pathinfo(parse_url($op[(string)$ch][CURLOPT_URL] ,
-                        PHP_URL_PATH),PATHINFO_BASENAME),'state'=>false,'path'=>null];
+                    $return[$id]['download'] = [
+                        'name'  => getUrlfile($op[(string)$ch][CURLOPT_URL]),
+                        'state' => false,
+                        'path'  => null
+                    ];
                 }
                 // 回调处理方式
                 if (is_callable($this->callback)) {
@@ -775,7 +778,7 @@ class WhttpClass
             // 默认值
             $options = [ 
                 // 请求地址
-                CURLOPT_URL            => $url,
+                CURLOPT_URL            => parseurlen($url), // 处理空格,不然请求404
                 // 设置cURL允许执行的最长毫秒数
                 CURLOPT_NOSIGNAL       => true,
                 /** 使用 cURL 下载 MP3 文件是一个对开发人员来说不错的例子，CURLOPT_CONNECTTIMEOUT 可以设置为10秒，标识如果服务器10秒内没有响应，脚本就会断开连接，CURLOPT_TIMEOUT 可以设置为100秒，如果MP3文件100秒内没有下载完成，脚本将会断开连接。
@@ -958,7 +961,7 @@ class WhttpClass
 
                 if (empty($name)) 
                 {
-                    $name = pathinfo(parse_url($options[CURLOPT_URL] ,PHP_URL_PATH),PATHINFO_BASENAME);
+                    $name = getUrlfile($options[CURLOPT_URL]);
                     if(empty($name)) {
                         // 获取失败直接关闭临时文件
                         $name = parse_url($info['url'], PHP_URL_HOST);
