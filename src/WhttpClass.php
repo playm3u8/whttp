@@ -95,6 +95,8 @@ class WhttpClass
         'overtimedue' => 60, // 超时请求高于次数设置的缓存时间（秒）
     ];
 
+    private $downloaded;
+
     /**
      * 魔术方法 有不存在的操作的时候执行
      * @access public
