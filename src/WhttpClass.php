@@ -89,6 +89,8 @@ class WhttpClass
         'host'    => '127.0.0.1',
         'pass'    => '',
         'expire'  => 60,
+        'decache' => false,
+        'cacheid' => '',     // 设置缓存id,不设置默认id
         'count'   => 0,      // 允许超时请求次数 0不限制
         'overtimedue' => 60, // 超时请求高于次数设置的缓存时间（秒）
     ];
@@ -455,12 +457,22 @@ class WhttpClass
             // 实例化Redis
             $predis = new Predis($this->redis_config);
             // 缓存ID标示
-            $cacid = "curlCache_".md5($this->getCacheID($options[0]).$this->redis_config['count'].$this->redis_config['overtimedue']);
-            // 判断是否存在
-            if ($predis->has($cacid)) {
-                // 获取缓存解压数据
-                $this->data = unserialize(gzinflate($predis->get($cacid)));
-                return $this->data;
+            if (!empty($redis_config['cacheid'])) {
+                // 指定缓存ID
+                $cacid = "curlCache_".$redis_config['cacheid'];
+            } else {
+                $cacid = "curlCache_".md5($this->getCacheID($options[0]).$this->redis_config['count'].$this->redis_config['overtimedue']);
+            }
+            // 删除缓存，并且重新请求
+            if ( $this->redis_config['decache']) {
+                $predis->rm($cacid);
+            } else {
+                // 判断是否存在
+                if ($predis->has($cacid)) {
+                    // 获取缓存解压数据
+                    $this->data = unserialize(gzinflate($predis->get($cacid)));
+                    if($this->data) return $this->data;
+                }
             }
         }
         // 初始化
@@ -490,6 +502,8 @@ class WhttpClass
         $this->data['body']     = $dataExec['body'];
         // 下载信息
         $this->data['download'] = $dataExec['download'];
+        // 标识这个请求是否为缓存
+        $this->data['iscache']  = false;
         // 销毁
         curl_close($ch);
         // 删除无用数据
@@ -509,7 +523,12 @@ class WhttpClass
                     $this->redis_config['expire']   = $overtimedue;
                     $this->data['error'] = "Cache: ".$this->data['error'];
                 }
-                $predis->set($cacid, gzdeflate(serialize($this->data)), $this->redis_config['expire']);
+                // 标识这个请求是否为缓存
+                $this->data['iscache'] = true;
+                if ($this->data['body']) {
+                    // 有数据就写入缓存了
+                    $predis->set($cacid, gzdeflate(serialize($this->data)), $this->redis_config['expire']);
+                }
             } else {
                 if ($this->redis_config['count'] > 0){
                     // 只要是错误就记录，不限于请求超时上
@@ -521,14 +540,12 @@ class WhttpClass
                     }
                 }
                 // 下面的是只有在请求超时上才记录
-/*
-                if (strpos($this->data['error'], "timed out") !== false) {
-                    // 请求超时记录一次
-                    if ($count > 0){
-                        $predis->increment($curl_error_id);
-                    }
-                }
-*/
+                // if (strpos($this->data['error'], "timed out") !== false) {
+                //     // 请求超时记录一次
+                //     if ($count > 0){
+                //         $predis->increment($curl_error_id);
+                //     }
+                // }
             }
         }
         return $this->data;
@@ -541,6 +558,7 @@ class WhttpClass
      */
     private function multi($options, $num) 
     {
+        if(array_key_exists("cache", $this->method)) $this->Error("批量请求不能使用缓存");
         $op = [];
         // 初始化(并发)
         $mh = curl_multi_init();

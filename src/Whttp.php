@@ -77,6 +77,8 @@ class Whttp extends WhttpClass
             'host'    => '127.0.0.1',  // Redis连接IP
             'pass'    => '',           // 密码
             'expire'  => 60,           // 默认缓存到期时间
+            'decache' => false,        // 删除缓存并且重新请求
+            'cacheid' => '',           // 设置缓存id,不设置默认id
             // 允许失败或超时请求次数
             // 意思就是请求3次都错误就请求返回空，
             // 避免服务器高请求导致大量占用资源卡死
