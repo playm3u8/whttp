@@ -243,8 +243,13 @@ class WhttpClass
         $return = $this->send();
         // 没有直接返回
         if(!$return['headers']) return Null;
-        // trim去除回车符号
-        return trim(fast($return, "headers.".$name));
+
+        if(empty($name)){
+            return $return['headers'];
+        } else {
+            // trim去除回车符号
+            return trim(fast($return, "headers.".$name));
+        }
     }
 
     /**
@@ -270,7 +275,12 @@ class WhttpClass
         $return = $this->send();
         // 没有直接返回
         if(!$return['info']) return Null;
-        return fast($return, "info.".$name);
+
+        if(empty($name)){
+            return $return['info'];
+        } else {
+            return fast($return, "info.".$name);
+        }
     }
 
     /**
