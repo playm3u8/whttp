@@ -503,7 +503,7 @@ class WhttpClass
             $this->data['exec'] = $this->exec[(string)$ch];
         }
         // 获取请求返回详细数据
-        $this->data['info']    = curl_getinfo($ch);
+        $this->data['info']    = $this->deInfourl(curl_getinfo($ch));
         // 获取错误信息
         $this->data['error']   = empty($this->data['exec'])? curl_error($ch) : Null;
         // 处理响应数据
@@ -606,7 +606,7 @@ class WhttpClass
                 // 获取错误信息
                 $error                = curl_error($ch);
                 // 获取请求返回详细数据
-                $info                 = curl_getinfo($ch);
+                $info                 = $this->deInfourl(curl_getinfo($ch));
                 // 提取出请求host
                 $host                 = parse_url($info['url'], PHP_URL_HOST);
                 // 获取响应全部信息，包括有请求头和内容
@@ -774,10 +774,13 @@ class WhttpClass
         }
         // 批量配置请求INFO
         foreach ($urls as $id => $url) {
+            $urlencode_utf8 = false;
             // 处理GET地址
             if ($out['method'] == 'GET') {
                 if (isset($out['data'])) {
                     if(is_array($out['data'])){
+                        // 整合好的data会自动编码
+                        $urlencode_utf8 = true;
                         $url = $url."?".merge_string($out['data']);
                     } else {
                         $url = $url."?".$out['data'];
@@ -788,7 +791,7 @@ class WhttpClass
             // 默认值
             $options = [ 
                 // 请求地址
-                CURLOPT_URL            => parseurlen($url), // 处理空格,不然请求404
+                CURLOPT_URL            => ($urlencode_utf8)? $url:urlencode_utf8($url),
                 // 设置cURL允许执行的最长毫秒数
                 CURLOPT_NOSIGNAL       => true,
                 /** 使用 cURL 下载 MP3 文件是一个对开发人员来说不错的例子，CURLOPT_CONNECTTIMEOUT 可以设置为10秒，标识如果服务器10秒内没有响应，脚本就会断开连接，CURLOPT_TIMEOUT 可以设置为100秒，如果MP3文件100秒内没有下载完成，脚本将会断开连接。
@@ -1086,6 +1089,19 @@ class WhttpClass
         unset($options[CURLOPT_WRITEFUNCTION]);
         unset($options[CURLOPT_PROGRESSFUNCTION]);
         return md5(serialize($options));
+    }
+
+    /**
+     * 解码返回请求INFO里面的URL地址
+     * @Author   laoge
+     * @DateTime 2021-04-03
+     * @param    array      $info [description]
+     * @return   [type]           [description]
+     */
+    private function deInfourl($info=[]) 
+    {
+        $info['url'] = rawurldecode($info['url']);
+        return $info;
     }
 
     /**

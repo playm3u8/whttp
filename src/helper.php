@@ -376,7 +376,7 @@ if (!function_exists('uuid')) {
     }
 }
 
-if (!function_exists('parseurlen')) {
+if (!function_exists('urlencode_utf8')) {
     /**
      * url地址编码
      * @Author   laoge
@@ -384,7 +384,7 @@ if (!function_exists('parseurlen')) {
      * @param    string     $url [description]
      * @return   [type]          [description]
      */
-    function parseurlen($url = ""){
+    function urlencode_utf8($url = ""){
         $url = rawurlencode($url);
         $a   = array("%3A", "%2F", "%40", "%3F","%3D","%26");
         $b   = array(":", "/", "@", "?", "=","&");
