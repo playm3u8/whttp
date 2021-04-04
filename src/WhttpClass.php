@@ -506,14 +506,27 @@ class WhttpClass
         $this->data['info']    = $this->deInfourl(curl_getinfo($ch));
         // 获取错误信息
         $this->data['error']   = empty($this->data['exec'])? curl_error($ch) : Null;
-        // 处理响应数据
-        $dataExec = $this->getExec($this->data['exec'], $this->data['info'], $options[0], $ch);
-        // 获取响应头部
-        $this->data['headers']  = $dataExec['headers'];
-        // 获取响应内容
-        $this->data['body']     = $dataExec['body'];
-        // 下载信息
-        $this->data['download'] = $dataExec['download'];
+        if (empty($this->data['error'])) {
+            // 处理响应数据
+            $dataExec = $this->getExec($this->data['exec'], $this->data['info'], $options[0], $ch);
+            // 获取响应头部
+            $this->data['headers']  = $dataExec['headers'];
+            $this->data['error']    = $dataExec['error'];
+            // 获取响应内容
+            $this->data['body']     = $dataExec['body'];
+            // 下载信息
+            $this->data['download'] = $dataExec['download'];
+        } else {
+            // 下面的失败输出的信息
+            $this->data['headers']  = [];
+            $this->data['body']     = null;
+            $this->data['download'] = [
+                'name'  => getUrlfile($options[0][CURLOPT_URL]),
+                'state' => false,
+                'path'  => null,
+                'size'  => 0
+            ];
+        }
         // 标识这个请求是否为缓存
         $this->data['iscache']  = false;
         // 销毁
@@ -628,6 +641,7 @@ class WhttpClass
                 if (empty($error)) {
                     // 处理响应数据
                     $dataExec = $this->getExec($exec, $info, $op[(string)$ch], $ch);
+                    $return[$id]['error']    = $dataExec['error'];
                     // 获取响应头部
                     $return[$id]['headers']  = $dataExec['headers'];
                     // 获取响应内容
@@ -641,7 +655,8 @@ class WhttpClass
                     $return[$id]['download'] = [
                         'name'  => getUrlfile($op[(string)$ch][CURLOPT_URL]),
                         'state' => false,
-                        'path'  => null
+                        'path'  => null,
+                        'size'  => 0
                     ];
                 }
                 // 回调处理方式
@@ -980,44 +995,52 @@ class WhttpClass
                         $name = parse_url($info['url'], PHP_URL_HOST);
                     }
                 }
+                // 下载文件如果是非正常响应状态码，必须返回错误，不然下载的内容就不对了
+                if($info['http_code'] != 200 && $info['http_code'] != 302) {
+                    $data['error'] = "Server response ".$info['http_code'];
+                    $data['download']['state'] = false;
+                    $data['download']['path']  = null;
+                    $data['download']['name']  = $name;
+                    $data['download']['size']  = 0;
+                } else {
+                    // 保存文件到指定位置
+                    if(!file_exists($this->method['fp_path'])) 
+                    {
+                        // 目录不存在直接创建
+                        mkdir ($this->method['fp_path'], 0777, true);
+                    }
 
-                // 保存文件到指定位置
-                if(!file_exists($this->method['fp_path'])) 
-                {
-                    // 目录不存在直接创建
-                    mkdir ($this->method['fp_path'], 0777, true);
-                }
+                    if (gettype($data['body']) == 'boolean') {
 
-                if (gettype($data['body']) == 'boolean') {
-
-                    if(!$fp = fopen($this->method['fp_path'].$name, "w")) {
-                        fclose($this->fptmp[(string)$ch]);
-                        // 输出下载信息
-                        $data['error'] = "写入失败";
-                        $data['download']['state'] = false;
-                        $data['download']['path']  = null;
-                        $data['download']['name']  = $name;
-                    } else {
-                        fseek($this->fptmp[(string)$ch], 0);
-                        $download_length = $this->pipe_streams($this->fptmp[(string)$ch], $fp);
-                        fclose($fp);
-                        // 关闭临时文件会直接找到删除
-                        fclose($this->fptmp[(string)$ch]);
-                        // 效验下载大小，输出下载信息
-                        if ($download_length != $info['size_download']) {
-
-                            $data['error'] = "下载失败";
+                        if(!$fp = fopen($this->method['fp_path'].$name, "w")) {
+                            fclose($this->fptmp[(string)$ch]);
+                            // 输出下载信息
+                            $data['error'] = "写入失败";
                             $data['download']['state'] = false;
                             $data['download']['path']  = null;
                             $data['download']['name']  = $name;
-
+                            $data['download']['size']  = 0;
                         } else {
-                            $data['download']['state'] = true;
-                            $data['download']['path']  = $this->method['fp_path'].$name;
-                            $data['download']['name']  = $name;
+                            fseek($this->fptmp[(string)$ch], 0);
+                            $download_length = $this->pipe_streams($this->fptmp[(string)$ch], $fp);
+                            fclose($fp);
+                            // 关闭临时文件会直接找到删除
+                            fclose($this->fptmp[(string)$ch]);
+                            // 效验下载大小，输出下载信息
+                            if ($download_length != $info['size_download']) {
+                                $data['error'] = "下载失败";
+                                $data['download']['state'] = false;
+                                $data['download']['path']  = null;
+                                $data['download']['name']  = $name;
+                                $data['download']['size']  = 0;
+                            } else {
+                                $data['download']['state'] = true;
+                                $data['download']['path']  = $this->method['fp_path'].$name;
+                                $data['download']['name']  = $name;
+                                $data['download']['size']  = $download_length;
+                            }
                         }
                     }
-
                 }
                 // 删除body数据，做好标签在指定的地方删除
                 $data['body'] = true;
@@ -1117,8 +1140,14 @@ class WhttpClass
      * 销毁处理
      */
     public function __destruct()
-    {
-        unset($this->method, $this->data, $this->exec, $this->fptmp, $this->call_return);
+    {   
+        $this->method      = null;
+        $this->data        = null;
+        $this->exec        = null;
+        $this->fptmp       = null;
+        $this->call_return = null;
+        $this->downloaded  = null;
+        unset($this->method,$this->data,$this->exec,$this->fptmp,$this->call_return,$this->downloaded);
     }
 
     /**
