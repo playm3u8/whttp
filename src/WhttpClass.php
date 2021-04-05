@@ -95,7 +95,9 @@ class WhttpClass
         'overtimedue' => 60, // 超时请求高于次数设置的缓存时间（秒）
     ];
 
-    private $downloaded;
+    private $downloaded = false;
+    private $ismulti    = false;
+    private $isdown     = false;
 
     /**
      * 魔术方法 有不存在的操作的时候执行
@@ -225,11 +227,7 @@ class WhttpClass
      */
     public function getCode() 
     {
-        // 发送请求
-        $return = $this->send();
-        // 没有直接返回
-        if(!$return['headers']) return Null;
-        return fast($return, "headers.State.StatusCode");
+        return $this->getHeaders("headers.State.StatusCode");
     }
 
     /**
@@ -239,6 +237,9 @@ class WhttpClass
      */
     public function getHeaders ($name="") 
     {
+        if ($this->ismulti) {
+            return null;
+        }
         // 发送请求
         $return = $this->send();
         // 没有直接返回
@@ -253,11 +254,24 @@ class WhttpClass
     }
 
     /**
+     * 获取响应头部(不支持并发)
+     * @param  string $name 名称(.号分割)
+     * @return string
+     */
+    public function getCookie ($name="")
+    {
+        return $this->getHeaders("headers.Cookie");
+    }
+
+    /**
      * 获取响应内容(不支持并发)
      * @return data
      */
     public function getBody() 
     { 
+        if ($this->ismulti) {
+            return null;
+        }
         // 发送请求
         $return = $this->send();
         // 没有直接返回
@@ -271,11 +285,13 @@ class WhttpClass
      */
     public function getInfo($name="") 
     { 
+        if ($this->ismulti) {
+            return null;
+        }
         // 发送请求
         $return = $this->send();
         // 没有直接返回
         if(!$return['info']) return Null;
-
         if(empty($name)){
             return $return['info'];
         } else {
@@ -289,6 +305,9 @@ class WhttpClass
      */
     public function getError() 
     { 
+        if ($this->ismulti) {
+            return null;
+        }
         // 发送请求
         $return = $this->send();
         // 没有直接返回
@@ -303,15 +322,16 @@ class WhttpClass
      */
     public function getJson($name="")
     {
+        if ($this->ismulti) {
+            return null;
+        }
         // 发送请求
         $return = $this->send();
         // 没有直接返回
         if(!$return['body']) return Null;
         // 编码JSON
         $data = json_decode(trim($return['body'], chr(239) . chr(187) . chr(191)), true);
-        if(empty($name)){
-            return $data;
-        }
+        if(empty($name)) return $data;
         return fast($data, $name);
     }
 
@@ -331,53 +351,29 @@ class WhttpClass
     }
 
     /**
-     * 执行多任务并发
-     * 回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
-     * @param  callable $callback 回调函数
-     */
-    public function getGany(callable $callback) 
-    { 
-        $this->callback = $callback;
-        // 处理配置信息
-        $options = $this->config($this->method);
-        if (count($options) == 1) {
-            $this->Error("不支持单个URL请求");
-        }
-        return $this->send($options); 
-    }
-
-    /**
      * 下载文件(批量下载无法显示进度)
      * @Author   laoge
      * @DateTime 2021-03-23
      * @param    callable   $callback  回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
      * @return   array                 
      */
-    public function getDownload(callable $callback=null)
+    public function getDownload()
     {
-        $path = isset($this->method['savepath'])? $this->method['savepath']:"";
-
+        $this->isdown = true;
+        $this->method['fp_path'] = isset($this->method['savepath'])? $this->method['savepath']:"";
+        $this->method['fp_name'] = isset($this->method['savename'])? $this->method['savename']:"";
         // 检查保存路径的完整性
-        if (empty($path)) {
+        if (empty($this->method['fp_path'])) {
             $this->Error("保存文件路径不能为空");
         } 
-
         // 补上/
-        if(substr($path, -1) != "/") {
-            $path = $path."/";
+        if(substr($this->method['fp_path'], -1) != "/") {
+            $this->method['fp_path'] = $this->method['fp_path']."/";
         }
-        $this->method['fp_path'] = $path;
-
-        // 批量
-        if (gettype($this->method['url']) == 'array') {
-            $this->callback = $callback;
-        }
-
         // 发送请求
         $return = $this->send($this->config($this->method));
-
         // 处理单发
-        if (gettype($this->method['url']) == 'string') {
+        if ($this->ismulti == false || count($this->method['url']) == 1) {
             // 下载完成了输出100%
             if(empty($return['error'])){
                 if (runningInConsole()) {
@@ -404,34 +400,31 @@ class WhttpClass
         if($this->data) return $this->data;
         // 处理配置信息
         $options = ($options)? $options : $this->config($this->method);
-        if (count($options) == 1) {
-            // 单一请求
-            return $this->single($options);
-        } elseif (count($options) > 1) {
-            // 如果是批量下载就不用getGany
-            if (!isset($this->method['fp_path'])) {
-                // 判断是否调用了getGany方法
-                if ($this->callback == Null) {
-                    $this->Error('批量处理请使用 "getGany" 方法');
-                }
+        // 单一请求
+        if(!array_key_exists('gany' ,$this->method)){
+            if (count($options) == 1) {
+                // 单地址还是保留常规请求
+                return $this->single($options);
             }
-            $multi = [];
-            // 批量请求
-            do {
-                // 计算没事并发执行数量
-                $concurrent = min($this->maxConcurrent, $this->_moreToDo());
-                // printf ("do:".$concurrent."\n");
-                
-                // 发送并发请求
-                $result = $this->multi($options, $concurrent);
-                foreach ($result as $value) {
-                    // 返回的结果数组累计储存起来
-                    $multi[] = $value;
-                }
-            } while($this->_moreToDo());
-            // 返回全部结果
-            return $multi;
         }
+        // 判断是否调用了gany方法
+        if(array_key_exists('gany' ,$this->method)) {
+            $this->callback = $this->method['gany'];
+        }
+        $multi = [];
+        // 批量请求
+        do {
+            // 计算没事并发执行数量
+            $concurrent = min($this->maxConcurrent, $this->_moreToDo());
+            // printf ("do:".$concurrent."\n");
+
+            // 发送并发请求
+            $result = $this->multi($options, $concurrent);
+            // 返回的结果数组累计储存起来
+            foreach ($result as $value) $multi[] = $value;
+        } while($this->_moreToDo());
+        // 返回全部结果
+        return $multi;
     }
 
     /**
@@ -454,110 +447,87 @@ class WhttpClass
      */
     private function single($options) 
     {
-        // 识别缓存驱动
-        if (array_key_exists("cache", $this->method)) {
-            // 检查参数是否正确
-            if (gettype($this->method['cache']) != 'NULL'){
-                if(array_key_exists("0", $this->method['cache'])) {
-                    $this->Error("[cache]参数设置错误,参数1必须包含 'host' key");
-                }
-                // 合并配置
-                foreach ($this->method['cache'] as $key => $value) {
-                    $this->redis_config[$key] = $value;
-                }
-            } 
-            // 实例化Redis
-            $predis = new Predis($this->redis_config);
-            // 缓存ID标示
-            if (!empty($redis_config['cacheid'])) {
-                // 指定缓存ID
-                $cacid = "curlCache_".$redis_config['cacheid'];
-            } else {
-                $cacid = "curlCache_".md5($this->getCacheID($options[0]).$this->redis_config['count'].$this->redis_config['overtimedue']);
-            }
-            // 删除缓存，并且重新请求
-            if ( $this->redis_config['decache']) {
-                $predis->rm($cacid);
-            } else {
-                // 判断是否存在
-                if ($predis->has($cacid)) {
-                    // 获取缓存解压数据
-                    $this->data = unserialize(gzinflate($predis->get($cacid)));
-                    if($this->data) return $this->data;
-                }
-            }
-        }
-        // 初始化
-        $ch = curl_init();
-        // 临时文件
-        if(!empty($this->method['fp_path'])) {
-            $this->fptmp[(string)$ch] = tmpfile();
-            $this->method['fp_name']  = isset($this->method['savename'])? $this->method['savename']:"";
-        }
-        curl_setopt_array($ch, $options[0]);
-        // 发送请求
-        $this->data['exec'] = curl_exec($ch);
-        // 获取响应全部信息，包括有请求头和内容
-        if (!empty($this->exec[(string)$ch])) {
-            // 获取截取数据
-            $this->data['exec'] = $this->exec[(string)$ch];
-        }
-        // 获取请求返回详细数据
-        $this->data['info']    = $this->deInfourl(curl_getinfo($ch));
-        // 获取错误信息
-        $this->data['error']   = empty($this->data['exec'])? curl_error($ch) : Null;
-        if (empty($this->data['error'])) {
-            // 处理响应数据
-            $dataExec = $this->getExec($this->data['exec'], $this->data['info'], $options[0], $ch);
-            // 获取响应头部
-            $this->data['headers']  = $dataExec['headers'];
-            $this->data['error']    = $dataExec['error'];
-            // 获取响应内容
-            $this->data['body']     = $dataExec['body'];
-            // 下载信息
-            $this->data['download'] = $dataExec['download'];
+        $this->data = $this->curlcache($options);
+        if($this->data) {
+            return $this->data;
         } else {
-            // 下面的失败输出的信息
-            $this->data['headers']  = [];
-            $this->data['body']     = null;
-            $this->data['download'] = [
-                'name'  => getUrlfile($options[0][CURLOPT_URL]),
-                'state' => false,
-                'path'  => null,
-                'size'  => 0
-            ];
+            $ch = curl_init();
+            curl_setopt_array($ch, $options[0]);
+            if($this->isdown) $this->fptmp[(string)$ch] = tmpfile();
+            $this->data = $this->getExec1($options[0], $ch);
+            $this->data['iscache']  = false;
+            $this->curlcache($options, $this->data);
+            curl_close($ch);
+            return $this->data;
         }
-        // 标识这个请求是否为缓存
-        $this->data['iscache']  = false;
-        // 销毁
-        curl_close($ch);
-        // 删除无用数据
-        unset($this->data['exec']);
-        // 如果设置了缓存就进入写入处理
-        if (array_key_exists("cache", $this->method)) {
+    }
+
+    /**
+     * 处理请求缓存
+     * @Author   laoge
+     * @DateTime 2021-04-04
+     * @param    array      $options [description]
+     * @param    array      $data    [description]
+     * @return   [type]              [description]
+     */
+    private function curlcache($options, $data=[])
+    {
+        if (!array_key_exists("cache",$this->method)) return [];
+        // 检查参数是否正确
+        if (gettype($this->method['cache']) != 'NULL'){
+            if(array_key_exists("0", $this->method['cache'])) {
+                $this->Error("[cache]参数设置错误,参数1必须包含 'host' key");
+            }
+            // 合并配置
+            foreach ($this->method['cache'] as $key => $value) $this->redis_config[$key] = $value;
+        }
+        // 实例化Redis
+        $predis = new Predis($this->redis_config);
+        // 缓存ID标示
+        if (!empty($redis_config['cacheid'])) {
+            // 指定缓存ID
+            $cacid = "curlCache_".$redis_config['cacheid'];
+        } else {
+            $cacid = "curlCache_".md5($this->getCacheID($options[0]).$this->redis_config['count'].$this->redis_config['overtimedue']);
+        }
+        // 删除缓存，并且重新请求
+        if ( $this->redis_config['decache']) {
+            $predis->rm($cacid);
+        }
+        // 读取
+        if (!$data) {
+            // 判断是否存在
+            if ($predis->has($cacid)) {
+                // 获取缓存解压数据
+                $this->data = unserialize(gzinflate($predis->get($cacid)));
+                if($this->data) return $this->data;
+            } else {
+                return [];
+            }
+        } else {
+            // 写入
             // 只要不出错，所有数据都加入缓存
             // 连续请求超时次数高于设定次数将进入缓存
             $count         = $this->redis_config['count'];   // 次
             $overtimedue   = $this->redis_config['overtimedue']; // 秒
             $curl_error_id = "curl_error_".md5($count.$overtimedue.$cacid);
-            if (empty($this->data['error']) || $predis->get($curl_error_id) >= $count-1) {
+            if (empty($data['error']) || $predis->get($curl_error_id) >= $count-1) {
                 // 设置了超时次数限制就走限制的缓存时间
                 if ($predis->has($curl_error_id)) {
                     // 清除记录
                     $predis->rm($curl_error_id);
                     $this->redis_config['expire']   = $overtimedue;
-                    $this->data['error'] = "Cache: ".$this->data['error'];
+                    $data['error'] = "Cache: ".$data['error'];
                 }
-                // 标识这个请求是否为缓存
-                $this->data['iscache'] = true;
-                if ($this->data['body']) {
+                $data['iscache'] = true;
+                if ($data['headers'] || $data['body'] || $data['download']['size'] > 0) {
                     // 有数据就写入缓存了
-                    $predis->set($cacid, gzdeflate(serialize($this->data)), $this->redis_config['expire']);
+                    $predis->set($cacid, gzdeflate(serialize($data)), $this->redis_config['expire']);
                 }
             } else {
                 if ($this->redis_config['count'] > 0){
                     // 只要是错误就记录，不限于请求超时上
-                    if (!empty($this->data['error'])) {
+                    if (!empty($data['error'])) {
                         // 请求超时记录一次
                         if ($count > 0){
                             $predis->increment($curl_error_id);
@@ -565,15 +535,155 @@ class WhttpClass
                     }
                 }
                 // 下面的是只有在请求超时上才记录
-                // if (strpos($this->data['error'], "timed out") !== false) {
-                //     // 请求超时记录一次
-                //     if ($count > 0){
-                //         $predis->increment($curl_error_id);
-                //     }
-                // }
+                /*
+                if (strpos($data['error'], "timed out") !== false) {
+                    // 请求超时记录一次
+                    if ($count > 0){
+                        $predis->increment($curl_error_id);
+                    }
+                }
+                */
             }
         }
-        return $this->data;
+    }
+
+    /**
+     * 内部处理响应exec数据
+     * @param  array  $options 配置信息
+     * @param  resource $ch    请求句柄
+     * @return array
+     */
+    private function getExec1($options, $ch)
+    {
+        $data = [];
+        // 获取响应全部信息，包括有请求头和内容
+        if (!empty($this->exec[(string)$ch])) {
+            // 获取接收回调响应内容
+            $exec = $this->exec[(string)$ch];
+        } else {
+            if($this->ismulti) {
+                // 同步
+                $exec = curl_multi_getcontent($ch);
+            } else {
+                // 单求(如果是下载文件就会返回true)
+                $exec = curl_exec($ch);
+                if (gettype($exec) == 'boolean') $exec = Null;
+            }
+        }
+        // 获取请求返回详细数据
+        $data['id']       = (int)$ch;
+        $data['info']     = $this->deInfourl(curl_getinfo($ch));
+        $data['error']    = curl_error($ch);
+        $data['host']     = parse_url($data['info']['url'], PHP_URL_HOST);
+        $data['headers']  = [];
+        $data['body']     = null;
+        $data['download'] = [];
+        if ($this->isdown) {
+            // 处理文件下载
+            $down_files = $this->down_files($data, $options, $ch);
+            if(!empty($down_files['error'])) {
+                // 失败了就关闭创建的临时文件
+                @fclose($this->fptmp[(string)$ch]);
+            }
+            foreach ($down_files as $key => $value) $data[$key] = $value;
+        } else {
+            // 得到响应头内容
+            $headerStr    = substr($exec, 0, $data['info']['header_size'] - 4);
+            // 处理多响应头
+            $headerStr    = explode("\r\n"."\r\n", $headerStr);
+            // 取最后一个响应头
+            $data['headers'] = format_header(end($headerStr));
+            // 把父请求头取出来,有先到后
+            if (count($headerStr) > 1) {
+                for ($i=0; $i < count($headerStr)-1; $i++) {
+                    $data['headers']['Father'][$i] = format_header($headerStr[$i]);
+                }
+            }
+            // 得到响应内容
+            $data['body'] = substr($exec, $data['info']['header_size']);
+            // 过滤字符串
+            if ($options[CURLOPT_NOBODY] == false) {
+                // UTF8编码处理
+                if(array_key_exists('utf8', $this->method)) {
+                    if (is_null($this->method['utf8']) || $this->method['utf8']) {
+                        $data['body'] = mb_convert_encoding($data['body'],'utf-8','GBK,UTF-8,ASCII');
+                    }
+                }
+                // 过滤字符
+                if (!empty($this->method['right'])) {
+                    // 取右
+                    $data['body'] = right($data['body'], $this->method['right']);
+                } elseif (!empty($this->method['left'])) {
+                    // 取左
+                    $data['body'] = left($data['body'], $this->method['left']);
+                } elseif (!empty($this->method['core'])) {
+                    // 取中
+                    $data['body'] = core($data['body'], $this->method['core'][0], $this->method['core'][1]);
+                }
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * 处理文件下载
+     * @Author   laoge
+     * @DateTime 2021-04-04
+     * @param    array     $data    [description]
+     * @param    array     $options [description]
+     * @param    [type]     $ch      [description]
+     * @return   [type]              [description]
+     */
+    private function down_files($data, $options, $ch)
+    {
+        $http_code = $data['info']['http_code'];
+        // 下载文件名称
+        if (empty($this->method['fp_name']) || $this->ismulti) {
+            $file_name = getUrlfile($options[CURLOPT_URL]);
+            // 文件名称获取失败就随机生成
+            $this->method['fp_name'] = empty($file_name)? getRandstr():$file_name;
+        }
+        // 返回数据
+        $return = [
+            'error' => $data['error'],
+            'download' => [
+                'name' => $this->method['fp_name'],
+                'path' => "",
+                'size' => 0
+            ]
+        ];
+        if (!empty($data['error'])) return $return;
+        // 下载文件如果是非正常响应状态码，必须返回错误，不然下载的内容就不对了
+        if($http_code != 200 && $http_code != 302) {
+            $return['error'] = "download code:".$http_code;
+            return $return;
+        }
+        // 目录不存在就创建
+        if(!file_exists($this->method['fp_path'])) {
+            // 目录不存在直接创建
+            mkdir ($this->method['fp_path'], 0777, true);
+        }
+        $fopen = fopen($this->method['fp_path'].$this->method['fp_name'], "w");
+        if(!$fopen) {
+            // 输出下载信息
+            $return['error'] = "没有权限写入失败";
+            return $return;
+        }
+        fseek($this->fptmp[(string)$ch], 0);
+        $file_length = $this->pipe_streams($this->fptmp[(string)$ch], $fopen);
+        // 保存文件关闭
+        @fclose($fopen);
+        // 关闭临时文件
+        @fclose($this->fptmp[(string)$ch]);
+        // 效验下载大小，输出下载信息
+        if ($file_length != $data['info']['size_download'] || $file_length == 0) {
+            $return['error'] = "下载失败,文件接收大小不对";
+            return $return;
+        } else {
+            $return['download']['size']  = $file_length;
+            $return['download']['path']  = $this->method['fp_path'].$this->method['fp_name'];
+        }
+        return $return;
     }
 
     /**
@@ -583,6 +693,7 @@ class WhttpClass
      */
     private function multi($options, $num) 
     {
+        $this->ismulti = true;
         if(array_key_exists("cache", $this->method)) $this->Error("批量请求不能使用缓存");
         $op = [];
         // 初始化(并发)
@@ -598,16 +709,13 @@ class WhttpClass
             // 添加到并发处理
             curl_multi_add_handle($mh, $ch);
             // 生成临时下载文件句柄
-            if(!empty($this->method['fp_path'])) $this->fptmp[(string)$ch] = tmpfile();
+            if($this->isdown) $this->fptmp[(string)$ch] = tmpfile();
             // 记录请求次数
             $this->currentIndex++;
-            // printf("multi:".$this->currentIndex."\n");
         }
         // 并发处理
-        $return   = [];
-        $id       = 0;
+        $id = 0;
         $active   = Null;
-        $callData = Null;
         do {
             while (($code = curl_multi_exec($mh, $active)) == CURLM_CALL_MULTI_PERFORM);
             if ($code != CURLM_OK) {
@@ -616,65 +724,15 @@ class WhttpClass
             while ($done = curl_multi_info_read($mh)) {
                 // 获取请求句柄
                 $ch                   = $done['handle'];
-                // 获取错误信息
-                $error                = curl_error($ch);
-                // 获取请求返回详细数据
-                $info                 = $this->deInfourl(curl_getinfo($ch));
-                // 提取出请求host
-                $host                 = parse_url($info['url'], PHP_URL_HOST);
-                // 获取响应全部信息，包括有请求头和内容
-                if (!empty($this->exec[(string)$ch])) {
-                    // 获取截取数据
-                    $exec         = $this->exec[(string)$ch];
-                } else {
-                    $exec         = curl_multi_getcontent($ch);
-                }
-                // 如果是批量下载就exec转boolean类型，方便提取下载数据
-                // 如果是批量下载exec就会返回true,(这里是为了和单地址请求统一)
-                if(!empty($this->method['fp_path'])) $exec = true;
-                // 请求句柄
-                $return[$id]['id']    = (int) $ch;
-                $return[$id]['host']  = $host;
-                $return[$id]['info']  = $info;
-                // 只要exec为空就获取下错误信息，没有就是正常的
-                $return[$id]['error'] = $error;
-                if (empty($error)) {
-                    // 处理响应数据
-                    $dataExec = $this->getExec($exec, $info, $op[(string)$ch], $ch);
-                    $return[$id]['error']    = $dataExec['error'];
-                    // 获取响应头部
-                    $return[$id]['headers']  = $dataExec['headers'];
-                    // 获取响应内容
-                    $return[$id]['body']     = $dataExec['body'];
-                    // 下载信息
-                    $return[$id]['download'] = $dataExec['download'];
-                } else {
-                    // 下面的失败输出的信息
-                    $return[$id]['headers']  = [];
-                    $return[$id]['body']     = null;
-                    $return[$id]['download'] = [
-                        'name'  => getUrlfile($op[(string)$ch][CURLOPT_URL]),
-                        'state' => false,
-                        'path'  => null,
-                        'size'  => 0
-                    ];
-                }
+                // 处理响应数据
+                $this->data[$id] = $this->getExec1($op[(string)$ch], $ch);
                 // 回调处理方式
                 if (is_callable($this->callback)) {
-                    // 请求句柄
-                    $func['id']      = (int) $ch;
-                    // 请求host
-                    $func['host']    = $return[$id]['host'];
-                    $func['info']    = $return[$id]['info'];
-                    $func['error']   = $return[$id]['error'];
-                    $func['headers'] = $return[$id]['headers'];
-                    $func['body']    = $return[$id]['body'];
-                    $func['download']= $return[$id]['download'];
                     // 输出请求信息
-                    $func['request'] = $this->method;
+                    $this->data[$id]['request'] = $this->method;
                     // 计数用的
-                    $func['complete'] = $this->complete++;
-                    $call_return = call_user_func_array($this->callback, array($func));
+                    $this->data[$id]['complete'] = $this->complete++;
+                    $call_return = call_user_func_array($this->callback, array($this->data[$id]));
                     if ($call_return) {
                         $this->call_return[] = $call_return;
                     }
@@ -695,7 +753,7 @@ class WhttpClass
         // 销毁
         curl_multi_close($mh);
         // 返回数据
-        return ($this->call_return)? $this->call_return : $return;
+        return ($this->call_return)? $this->call_return : $this->data;
     }  
 
     /**
@@ -735,12 +793,12 @@ class WhttpClass
     private function receiveDownload($ch, $exec)
     {
         // 开始下载
-        if (!empty($this->fptmp[(string)$ch])) {
-            // 根据句柄把数据写入到临时目录
-            return fwrite($this->fptmp[(string)$ch], $exec);
-        } else {
+        if (empty($this->fptmp[(string)$ch])) {
             // 断开连接
             return 0;
+        } else {
+            // 根据句柄把数据写入到临时目录
+            return fwrite($this->fptmp[(string)$ch], $exec);
         }
     }
 
@@ -832,6 +890,8 @@ class WhttpClass
                 CURLOPT_REFERER        => empty($out['referer'])? $url : $out['referer'],
                 // 默认请求头
                 CURLOPT_HTTPHEADER     => arrUp($this->default_header, empty($out['header'])? []:$out['header']),
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_NOBODY         => false,
             ];
             // 禁止重定向，默认重定向直接跳过
             if(array_key_exists('jump', $out)) {
@@ -840,15 +900,14 @@ class WhttpClass
                 } else {
                     $options[CURLOPT_FOLLOWLOCATION] = true;
                 }
-            } else {
-                $options[CURLOPT_FOLLOWLOCATION] = true;
             }
             
             // 设置要请求头和内容一起返回，反则只会返回请求头，这样好处就是请求很快得到请求头的信息
             if(array_key_exists('nobody', $out)) {
-                if (is_null($out['nobody']) || $out['nobody']) 
-                {
+                if (is_null($out['nobody']) || $out['nobody']) {
                     $options[CURLOPT_NOBODY] = true;
+                } else {
+                    $options[CURLOPT_NOBODY] = false;
                 }
             }
 
@@ -949,141 +1008,6 @@ class WhttpClass
             $return[$id] = $options;
         }
         return $return;
-    }
-
-    /**
-     * 内部处理响应exec数据
-     * @param  string $exec    响应数据
-     * @param  array  $info    请求信息
-     * @param  array  $options 配置信息
-     * @param  resource $ch    请求句柄
-     * @return array
-     */
-    private function getExec($exec, $info, $options, $ch)
-    {
-        $data = [
-            'error'    => null,
-            'body'     => null,
-            'headers'  => null,
-            'download' => ['state' => false, 'path' => null],
-        ];
-        //  无数据处理
-        if (!$exec) {
-            if(!empty($this->method['fp_path'])) {
-                // 下载失败关闭临时文件
-                fclose($this->fptmp[(string)$ch]);
-            }
-            return $data; 
-        } 
-
-        // 无响应头请求
-        if($options[CURLOPT_HEADER] == false) {
-            // 直接输出
-            $data['body'] = $exec;
-
-            // 文件下载
-            if (!empty($this->method['fp_path'])) {
-
-                // 保存到指定位置
-                $name = isset($this->method['fp_name'])? $this->method['fp_name']:"";
-
-                if (empty($name)) 
-                {
-                    $name = getUrlfile($options[CURLOPT_URL]);
-                    if(empty($name)) {
-                        // 获取失败直接关闭临时文件
-                        $name = parse_url($info['url'], PHP_URL_HOST);
-                    }
-                }
-                // 下载文件如果是非正常响应状态码，必须返回错误，不然下载的内容就不对了
-                if($info['http_code'] != 200 && $info['http_code'] != 302) {
-                    $data['error'] = "Server response ".$info['http_code'];
-                    $data['download']['state'] = false;
-                    $data['download']['path']  = null;
-                    $data['download']['name']  = $name;
-                    $data['download']['size']  = 0;
-                } else {
-                    // 保存文件到指定位置
-                    if(!file_exists($this->method['fp_path'])) 
-                    {
-                        // 目录不存在直接创建
-                        mkdir ($this->method['fp_path'], 0777, true);
-                    }
-
-                    if (gettype($data['body']) == 'boolean') {
-
-                        if(!$fp = fopen($this->method['fp_path'].$name, "w")) {
-                            fclose($this->fptmp[(string)$ch]);
-                            // 输出下载信息
-                            $data['error'] = "写入失败";
-                            $data['download']['state'] = false;
-                            $data['download']['path']  = null;
-                            $data['download']['name']  = $name;
-                            $data['download']['size']  = 0;
-                        } else {
-                            fseek($this->fptmp[(string)$ch], 0);
-                            $download_length = $this->pipe_streams($this->fptmp[(string)$ch], $fp);
-                            fclose($fp);
-                            // 关闭临时文件会直接找到删除
-                            fclose($this->fptmp[(string)$ch]);
-                            // 效验下载大小，输出下载信息
-                            if ($download_length != $info['size_download']) {
-                                $data['error'] = "下载失败";
-                                $data['download']['state'] = false;
-                                $data['download']['path']  = null;
-                                $data['download']['name']  = $name;
-                                $data['download']['size']  = 0;
-                            } else {
-                                $data['download']['state'] = true;
-                                $data['download']['path']  = $this->method['fp_path'].$name;
-                                $data['download']['name']  = $name;
-                                $data['download']['size']  = $download_length;
-                            }
-                        }
-                    }
-                }
-                // 删除body数据，做好标签在指定的地方删除
-                $data['body'] = true;
-            }
-
-        } else {
-            // 得到响应内容
-            $data['body'] = substr($exec, $info['header_size']);
-            // 得到响应头内容
-            $headerStr    = substr($exec, 0, $info['header_size'] - 4);
-            // 处理多响应头
-            $headerStr    = explode("\r\n"."\r\n", $headerStr);
-            // 取最后一个响应头
-            $data['headers'] = format_header(end($headerStr));
-            // 把父请求头取出来,有先到后
-            if (count($headerStr) > 1) {
-                for ($i=0; $i < count($headerStr)-1; $i++) { 
-                    $data['headers']['Father'][$i] = format_header($headerStr[$i]);
-                }
-            }
-        }
-        // 过滤字符串
-        if (!empty($data['body'])) {
-            // UTF8编码处理
-            if(array_key_exists('utf8', $this->method)) {
-                if (is_null($this->method['utf8']) || $this->method['utf8']) 
-                {
-                    $data['body'] = mb_convert_encoding($data['body'],'utf-8','GBK,UTF-8,ASCII');
-                }
-            }
-            // 过滤字符
-            if (!empty($this->method['right'])) {
-                // 取右
-                $data['body'] = right($data['body'], $this->method['right']);
-            } elseif (!empty($this->method['left'])) {
-                // 取左
-                $data['body'] = left($data['body'], $this->method['left']);
-            } elseif (!empty($this->method['core'])) {
-                // 取中
-                $data['body'] = core($data['body'], $this->method['core'][0], $this->method['core'][1]);
-            }
-        }
-        return $data;
     }
 
     /**

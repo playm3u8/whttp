@@ -89,7 +89,7 @@ class Whttp extends WhttpClass
         ];
         */
 
-        'writefunc' => ['callable'],    
+        'writefunc' => ['object'],
         // 回调方法,可以干预实时获取的内容,有2个参数 function($ch,$exec){}
         
         'savepath'  => ['string'],
@@ -100,6 +100,9 @@ class Whttp extends WhttpClass
         
         'concurrent' => ['integer|NULL'],
         // 设置并发数量限制(默认为10)
+
+        'gany'       => ['object'],
+        // 回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁 function($data){}
     ];
 
     // 返回方法说明
@@ -148,13 +151,6 @@ class Whttp extends WhttpClass
      * @return array
      */
     // public function getAll(string $name="");
-
-    /**
-     * 执行多任务并发
-     * 回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
-     * @param  callable $callback 回调函数，有1个参数 function($data){}
-     */
-    // public function getGany(callable $callback);
 
     /**
      * 下载文件(批量下载无法显示进度)

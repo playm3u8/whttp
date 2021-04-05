@@ -117,7 +117,7 @@ $urls = array(
     'http://route.showapi.com/6-1',
     'http://route.showapi.com/6-1',
 );
-Whttp::get($urls)->getGany(function($data){
+Whttp::get($urls)->gany(function($data){
     if($data['error']){
         echo "error: ".$data['error']."<br>";
     } else {
@@ -126,7 +126,7 @@ Whttp::get($urls)->getGany(function($data){
     }
     // 可以吧数据返回出去
     // return "sssss";
-});
+})->getAll();
 ```
 *9. 下载文件*
 ```php
@@ -146,7 +146,7 @@ $url[] = 'https://www.baidu.com/index.html';
 $rsult = Whttp::get($url)
     ->savepath($path)
     ->concurrent(10)
-    ->getDownload(Function($data) {
+    ->gany(Function($data) {
         if($data['error']){
             echo "error: ".$data['error']."\n";
         } else {
@@ -157,7 +157,7 @@ $rsult = Whttp::get($url)
         $data['download']['state'] = 123;
         return $data;
     }
-);
+)->getDownload();
 p($result,true);
 ```
 *9. 上传文件*
@@ -280,6 +280,9 @@ protected static $setlist1 = [
     
     'concurrent' => ['integer|NULL'],
     // 设置并发数量限制(默认为10)
+
+    'gany'       => ['object'],
+    // 回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁 function($data){}
 ];
 
 // 返回方法说明
@@ -328,13 +331,6 @@ protected static $setlist1 = [
  * @return array
  */
 // public function getAll(string $name="");
-
-/**
- * 执行多任务并发
- * 回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
- * @param  callable $callback 回调函数，有1个参数 function($data){}
- */
-// public function getGany(callable $callback);
 
 /**
  * 下载文件(批量下载无法显示进度)
