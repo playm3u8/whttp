@@ -6,20 +6,7 @@
 // +----------------------------------------------------------------------
 // | Author: laoge <3385168058@qq.com>
 // +----------------------------------------------------------------------
-use PL\Fhttp;
 use PL\Whttp;
-
-if (!function_exists('fhttp')) {
-    /**
-     * 网络请求 (fsockopen)
-     * @param  string $url 请求URL地址
-     * @return object
-     */
-    function fhttp($url)
-    {
-        return (new Fhttp($url));
-    }
-}
 
 if (!function_exists('get')) {
     /**
