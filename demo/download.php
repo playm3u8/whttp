@@ -9,7 +9,7 @@ use PL\Whttp;
 $urls = [
 
 	'https://api.mvgao.com:999/music/files/b29afe332bada824/074e52f9b6ba1baaf97542f9dc7c314e/584457/001-刘嘉亮 - 爱我就别伤害我.mp3',
-	  'https://api.mvgao.com:999/music/files/4427a34e305fdc8e/d699779349f155d3929dc56e89c07ac9/39595154/002-南北组合(吉萍) - 明月夜.mp3',
+	'https://api.mvgao.com:999/music/files/4427a34e305fdc8e/d699779349f155d3929dc56e89c07ac9/39595154/002-南北组合(吉萍) - 明月夜.mp3',
 	'https://api.mvgao.com:999/music/files/d816c1959bf99603/09cbdaf669de97295e652772d86f98fa/972658/003-动力火车 - 第一滴泪.mp3',
 	'https://api.mvgao.com:999/music/files/33cfd2a51ba90e89/56332217f4f862b8a3bdd6b233581039/36451950/004-艾岩 - 美丽的遗憾.mp3',
 	'https://api.mvgao.com:999/music/files/4ab09f6551c8f0e2/13f46083e098d57e50ce04300a3b8180/42921336/005-等什么君 - 难渡.mp3',
@@ -21,10 +21,8 @@ $urls = [
 ];
 
 
-// $name = pathinfo(parse_url($urls[0] ,PHP_URL_PATH),PATHINFO_BASENAME);
-// exit($name);
 $result = Whttp::get($urls)->savepath("./mp3")->getDownload();
-// p($result);
+
 foreach ($result as $value) {
 	p($value['download']);
 }

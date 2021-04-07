@@ -1,6 +1,5 @@
 <?php
 
-// 函数助手
 require_once '../autoload.php';
 use PL\Whttp;
 

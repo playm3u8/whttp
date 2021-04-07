@@ -235,34 +235,6 @@ if (!function_exists('fast')) {
     }
 }
 
-if (!function_exists('download')) {    
-    /**
-     * 下载文件
-     * @Author   laoge
-     * @DateTime 2020-02-26
-     * @param    data     $body 二进制数据
-     * @param    string   $name 文件安名称
-     * @param    string   $path 保存目录
-     * @return   string           下载路径
-     */
-    function download($body, $name, $path)
-    {
-        if (empty($name) || !$body) return Null;
-        // 创建目录
-        if(!file_exists($path)) mkdir ($path, 0777, true);
-        // 打开文件
-        if(!$fp = fopen($path.$name, "w")) {
-            throw new Exception("Unable to open file!");
-        }
-        // 写入文件
-        fwrite($fp, $body);
-        // 关闭文件
-        fclose($fp);
-        if(!file_exists($path.$name)) return Null;
-        return $path.$name;
-    }
-}
-
 if (!function_exists('proxyDownload')) {
     /**
      * 代理下载输出给用户
@@ -316,18 +288,28 @@ if (!function_exists('proxyDownload')) {
 
 if (!function_exists('p')) {
     /**
-     * 格式化打印数组
-     * @param  arr $arr
-     * @return string
+     * 浏览器友好的变量输出
+     * @param mixed $vars 要输出的变量
+     * @return void
      */
-    function p($arr, $die=false)
+    function p(...$vars)
     {
-        if(gettype($arr) == 'array'){
-            v_dump( $arr , 1 , '<pre>' , 0 );
+        ob_start();
+        var_dump(...$vars);
+
+        $output = ob_get_clean();
+        $output = preg_replace('/\]\=\>\n(\s+)/m', '] => ', $output);
+
+        if (PHP_SAPI == 'cli') {
+            $output = PHP_EOL . $output . PHP_EOL;
         } else {
-            echo $arr;
+            if (!extension_loaded('xdebug')) {
+                $output = htmlspecialchars($output, ENT_SUBSTITUTE);
+            }
+            $output = '<pre>' . $output . '</pre>';
         }
-        if($die) die;
+
+        echo $output;
     }
 }
 
@@ -520,41 +502,6 @@ if (!function_exists('nowtime')) {
         } else {
             return $r[0];
         }
-    }
-}
-
-if (!function_exists('v_dump')) {
-    /**
-     * 浏览器友好的变量输出
-     * @param mixed $var 变量
-     * @param boolean $echo 是否输出 默认为True 如果为false 则返回输出字符串
-     * @param string $label 标签 默认为空
-     * @param boolean $strict 是否严谨 默认为true
-     * @return void|string
-     */
-    function v_dump($var, $echo=true, $label=null, $strict=true) {
-        $label = ($label === null) ? '' : rtrim($label) . ' ';
-        if (!$strict) {
-            if (ini_get('html_errors')) {
-                $output = print_r($var, true);
-                $output = '<pre>' . $label . htmlspecialchars($output, ENT_QUOTES) . '</pre>';
-            } else {
-                $output = $label . print_r($var, true);
-            }
-        } else {
-            ob_start();
-            var_dump($var);
-            $output = ob_get_clean();
-            if (!extension_loaded('xdebug')) {
-                $output = preg_replace('/\]\=\>\n(\s+)/m', '] => ', $output);
-                $output = '<pre>' . $label . htmlspecialchars($output, ENT_QUOTES) . '</pre>';
-            }
-        }
-        if ($echo) {
-            echo($output);
-            return null;
-        }else
-            return $output;
     }
 }
 
