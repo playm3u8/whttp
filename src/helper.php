@@ -367,10 +367,10 @@ if (!function_exists('getUrlfile')) {
      * 获取URL文件名称
      * @Author   laoge
      * @DateTime 2021-04-03
-     * @param    [type]     $url [description]
+     * @param    string     $url [description]
      * @return   [type]          [description]
      */
-    function getUrlfile($url){
+    function getUrlfile(string $url){
 
         return pathinfo(parse_url(rawurldecode($url) ,PHP_URL_PATH),PATHINFO_BASENAME);
     }

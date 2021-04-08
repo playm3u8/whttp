@@ -98,6 +98,7 @@ class WhttpClass
     private $downloaded = false;
     private $ismulti    = false;
     private $isdown     = false;
+    private $progress   = false;
 
     /**
      * 魔术方法 有不存在的操作的时候执行
@@ -321,13 +322,12 @@ class WhttpClass
 
     /**
      * 下载文件(批量下载无法显示进度)
-     * @Author   laoge
-     * @DateTime 2021-03-23
-     * @param    callable   $callback  回调处理,不是每个请求都很快响应，这里就可以做到谁请求完成了就处理谁
-     * @return   array                 
+     * @param  bool|boolean $progress
+     * @return array
      */
-    public function getDownload()
+    public function getDownload(bool $progress=false)
     {
+        $this->progress = $progress;
         $this->isdown = true;
         $this->method['fp_path'] = isset($this->method['savepath'])? $this->method['savepath']:"";
         $this->method['fp_name'] = isset($this->method['savename'])? $this->method['savename']:"";
@@ -340,11 +340,11 @@ class WhttpClass
         $return = $this->send($this->config($this->method));
         if ($this->ismulti == false || count($this->method['url']) == 1) {
             if(empty($return['error'])){
-                if (runningInConsole()) {
+                if ($this->progress) {
                     printf("progress: [%-50s] %d%% Done\r"."\n", str_repeat('#',100/100*50), 100/100*100);  
                 }
             } else {
-                if (runningInConsole()) printf("\n");
+                if ($this->progress) printf("\n");
             }
         }
         return $return;
@@ -797,7 +797,7 @@ class WhttpClass
             if(!empty($out['cookie'])) $options[CURLOPT_COOKIE] = $out['cookie'];
             if (isset($out['fp_path'])) {
                 if (count($urls) == 1) {
-                    if(runningInConsole()) {
+                    if($this->progress) {
                         $options[CURLOPT_NOPROGRESS] = false;
                         $options[CURLOPT_PROGRESSFUNCTION] = [$this, 'parent::progress'];
                     }
@@ -888,7 +888,7 @@ class WhttpClass
      */
     private function deInfourl($info=[]) 
     {
-        $info['url'] = rawurldecode($info['url']);
+        $info['url'] = rawurldecode((string)$info['url']);
         return $info;
     }
 
