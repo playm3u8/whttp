@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <title>酷狗无损音质下载</title>
+
+    <!-- Bootstrap -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://cdn.bootcss.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <style>
+  	b{margin-right: 3px;}
+  </style>
+  <body>
+<div class="row">
+  <div class="col-md-2"></div>
+  <div class="col-md-8">
+	<h1 class="text-center">酷狗无损音质下载</h1>
+	<form class="form-inline text-center">
+	  <div class="form-group">
+		<input type="text" class="form-control" id="song_name" placeholder="请输入歌曲名称">
+		<button type="button" id="search" class="btn btn-primary">点击搜索</button>
+	  </div>
+	</form>
+	<table class="table table-hover">
+	  <thead>
+	    <tr>
+	      <th width="30%">歌曲名称</th>
+	      <th width="30%">歌手</th>
+	      <th width="40%">资源参数</th>
+	    </tr>
+	  </thead>
+	  <tbody id="list"></tbody>
+	</table>
+  </div>
+  <div class="col-md-2"></div>
+</div>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="layer/layer.js"></script>
+    <script>
+	  $('#search').on('click', function () {
+	  	var song_name = $("#song_name").val();
+	  	if(song_name == ''){
+			layer.alert('请输入歌曲名称', {
+			  icon: 2,
+			})
+			return;
+	  	}
+        $.ajax({  
+                type:'get',  
+                url:'kugou.php',  
+                dataType:'json',  
+                data:{song_name:song_name}, 
+                beforeSend:function(){  
+                    layer.load(0);
+                },success:function(res){
+				    str="";
+				    $.each(res.data,function(songs,item){
+				    	str = str + '<tr>'
+				    	str = str + '<td>'+item['SongName']+'</td>';
+				    	str = str + '<td>'+item['SingerName']+'</td>';
+				    	str = str + '<td>';
+				    	str = str + '<b class="btn btn-primary btn-xs">格式：'+item['SongExt']+'</b>';
+				    	str = str + '<b class="btn btn-primary btn-xs">大小：'+item['SongSize']+'</b>';	
+				    	str = str + '<b class="btn btn-primary btn-xs">时长：'+item['SongTime']+'</b>';	
+				    	str = str + '<a class="btn btn-primary btn-xs" href="'+item['SongUrl']+'">点我下载</a>';
+				    	str = str + '</td>';
+				    	str = str + '</tr>';
+				    });
+				    $("#list").html(str);
+                	layer.closeAll('loading');
+                },complete: function () {
+			        layer.msg('加载完成！');
+			    },error: function () {
+			        layer.msg('请求异常！');
+			        return;
+			    }
+        });
+	  })
+    </script>
+  </body>
+</html>

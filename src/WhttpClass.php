@@ -430,9 +430,9 @@ class WhttpClass
 
         $predis = new Predis($this->redis_config);
 
-        if (!empty($redis_config['cacheid'])) {
+        if (!empty($this->redis_config['cacheid'])) {
 
-            $cacid = "curlCache_".$redis_config['cacheid'];
+            $cacid = "curlCache_".$this->redis_config['cacheid'];
         } else {
             $cacid = "curlCache_".md5($this->getCacheID($options[0]).$this->redis_config['count'].$this->redis_config['overtimedue']);
         }
