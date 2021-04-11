@@ -1,5 +1,4 @@
 composer.lock
 vendor
 demo/mp3
-demo/html
-#demo
+demo/html/*
