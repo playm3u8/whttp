@@ -292,7 +292,25 @@ if (!function_exists('p')) {
      * @param mixed $vars 要输出的变量
      * @return void
      */
-    function p(...$vars)
+    function p($vars, $die=true)
+    {
+        if(gettype($vars) == 'array'){
+            echo "<pre>";
+            print_r($vars);
+        } else {
+            echo $vars."<br>";
+        }
+        if($die) exit;
+    }
+}
+
+if (!function_exists('dump')) {
+    /**
+     * 浏览器友好的变量输出
+     * @param mixed $vars 要输出的变量
+     * @return void
+     */
+    function dump(...$vars)
     {
         ob_start();
         var_dump(...$vars);

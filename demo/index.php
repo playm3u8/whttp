@@ -27,4 +27,5 @@ $default = [
 
 // exit;
 $result = Whttp::get('http://10.0.0.2/whttp/demo/test.php')->jump()->nobody()->getAll();
-p($result);
+
+dump($result);
