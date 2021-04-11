@@ -365,6 +365,7 @@ class WhttpClass
         }
         if(array_key_exists('gany' ,$this->method)) {
             $this->callback = $this->method['gany'];
+            unset($this->method['gany']);
         }
         $multi = [];
         do {
