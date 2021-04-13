@@ -212,7 +212,7 @@ class WhttpClass
      */
     public function getCode() 
     {
-        return $this->getHeaders("headers.State.StatusCode");
+        return $this->getHeaders("State.StatusCode");
     }
 
     /**
@@ -242,7 +242,7 @@ class WhttpClass
      */
     public function getCookie ($name="")
     {
-        return $this->getHeaders("headers.Cookie");
+        return $this->getHeaders("Cookie");
     }
 
     /**
