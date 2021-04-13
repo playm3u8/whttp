@@ -193,6 +193,7 @@ if (!function_exists('setUrl')) {
      */
     function setUrl(string $url, array $name)
     {
+        if(empty($name)) return $url;
         $data = parse_url($url);
         $data['query'] = parse_string($data['query']);
         foreach ($name as $key1 => $value1) {
@@ -206,7 +207,7 @@ if (!function_exists('setUrl')) {
 
         }
         $url = $data['scheme'].'://'.$data['host'];
-        $url = $url.$data['path'].merge_string($data['query']);
+        $url = $url.$data['path'].'?'.merge_string($data['query']);
         return $url;
     }
 }
