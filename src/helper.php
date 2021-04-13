@@ -198,11 +198,12 @@ if (!function_exists('setUrl')) {
         foreach ($name as $key1 => $value1) {
             if(gettype($value1) == 'array') {
                 foreach ($value1 as $key2 => $value2) {
-                    $data[$key1][$key2] = $value2;
+                    $data['query'][$key1][$key2] = $value2;
                 }
             } else {
-                $data[$key1] = $value1;
+                $data['query'][$key1] = $value1;
             }
+
         }
         $url = $data['scheme'].'://'.$data['host'];
         $url = $url.$data['path'].merge_string($data['query']);
