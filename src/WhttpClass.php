@@ -93,6 +93,7 @@ class WhttpClass
         'cacheid' => '',     // 设置缓存id,不设置默认id
         'count'   => 0,      // 允许超时请求次数 0不限制
         'overtimedue' => 60, // 超时请求高于次数设置的缓存时间（秒）
+        'callback' => null,  // 缓存数据先处理,选择性进行数据缓存(true:缓存,false:不缓存)
     ];
 
     private $downloaded = false;
@@ -450,6 +451,16 @@ class WhttpClass
                 return [];
             }
         } else {
+            if(! empty($this->redis_config['callback'])) {
+                // 处理缓存回调
+                $call_return = call_user_func_array($this->redis_config['callback'], array($data));
+                // 删除回调数据,不然会夹带很多数据
+                unset($this->redis_config['callback']);
+                if ($call_return == false) {
+                    // 返回假为不缓存结果
+                    return [];
+                }
+            }
             $count         = $this->redis_config['count'];
             $overtimedue   = $this->redis_config['overtimedue'];
             $curl_error_id = "curl_error_".md5($count.$overtimedue.$cacid);
