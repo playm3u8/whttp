@@ -295,6 +295,8 @@ protected static $setlist1 = [
         // 超时请求高于次数设置的缓存时间（秒）
         // 意思就是上面的错误次数后,服务器返回空的时间
         'overtimedue' => 60,
+        // 缓存数据先处理,选择性进行数据缓存(true:缓存,false:不缓存)
+        'callback' => null, // 有1个参数 function($data){}
     ];
     */
 
