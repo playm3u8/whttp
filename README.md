@@ -160,7 +160,7 @@ $rsult = Whttp::get($url)
 )->getDownload();
 p($result,true);
 ```
-*9. 上传文件*
+*10. 上传文件*
 ```php
 $path = 'qrcode-viewfile.png';
 $data = [
@@ -175,7 +175,7 @@ $http = Whttp::post('http://www.wwei.cn/qrcode-fileupload.html?op=index_jiema', 
 $http = $http->header(['Access-Sign: *','Origin: http://www.wwei.cn']);
 p($http->getJson(), true);
 ```
-*10. 过程干预*
+*11. 过程干预*
 ```php
 $urls = 'https://www.baidu.com';
 $http = Whttp::get($urls)->writefunc(function($ch, $exec){
@@ -191,8 +191,37 @@ if ($http->getError()) {
 }
 p($http,true);
 ```
+*12. 一个缓存例子*
+```php
+$param = [
+    'redis' => [
+        'host'     => '127.0.0.1',
+        // 获取今天剩余时间(秒)
+        'expire'   => 86400-(time()+8*3600)%86400,
+        // 'decache' => true,
+        'callback' => function($data) {
+            // 先判断数据是否是正常的，不是想要的就不缓存
+            if( strlen((string)$data['body']) != 64){
+                // 不缓存
+                return false;
+            } else {
+                // 缓存
+                return true;
+            }
+        },
+    ],
 
-*11. 更多说明
+    'url'  => 'http://demo.com/v1/login/',
+    'data' => 'user=123&password=123',
+];
+$token = Whttp::get($param['url'], $param['data'])
+            ->cache($param['redis'])
+            ->core('token":"','"')
+            ->getBody();
+return (string)$token;
+```
+
+*13. 更多说明
 ```php
 /**
  * 请求模式参数
