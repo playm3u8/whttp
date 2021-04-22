@@ -224,10 +224,10 @@ class WhttpClass
     public function getHeaders ($name="") 
     {
         if ($this->ismulti) {
-            return null;
+            return '';
         }
         $return = $this->send();
-        if(!$return['headers']) return Null;
+        if(!$return['headers']) return '';
 
         if(empty($name)){
             return $return['headers'];
@@ -253,10 +253,10 @@ class WhttpClass
     public function getBody() 
     { 
         if ($this->ismulti) {
-            return null;
+            return '';
         }
         $return = $this->send();
-        if(!$return['body']) return Null;
+        if(!$return['body']) return '';
         return fast($return, "body");
     }
 
@@ -267,10 +267,10 @@ class WhttpClass
     public function getInfo($name="") 
     { 
         if ($this->ismulti) {
-            return null;
+            return '';
         }
         $return = $this->send();
-        if(!$return['info']) return Null;
+        if(!$return['info']) return '';
         if(empty($name)){
             return $return['info'];
         } else {
@@ -285,10 +285,10 @@ class WhttpClass
     public function getError() 
     { 
         if ($this->ismulti) {
-            return null;
+            return '';
         }
         $return = $this->send();
-        if($return['body']) return Null;
+        if($return['body']) return '';
         return fast($return, "error");
     }
 
@@ -300,10 +300,10 @@ class WhttpClass
     public function getJson($name="")
     {
         if ($this->ismulti) {
-            return null;
+            return '';
         }
         $return = $this->send();
-        if(!$return['body']) return Null;
+        if(!$return['body']) return '';
         $data = json_decode(trim($return['body'], chr(239) . chr(187) . chr(191)), true);
         if(empty($name)) return $data;
         return fast($data, $name);
@@ -317,7 +317,7 @@ class WhttpClass
     public function getAll($name="")
     {
         $return = $this->send();
-        if(!$return) return Null;
+        if(!$return) return [];
         return fast($return, $name);
     }
 
@@ -517,7 +517,7 @@ class WhttpClass
         $data['error']    = curl_error($ch);
         $data['host']     = parse_url($data['info']['url'], PHP_URL_HOST);
         $data['headers']  = [];
-        $data['body']     = null;
+        $data['body']     = '';
         $data['download'] = [];
         if ($this->isdown) {
             $down_files = $this->down_files($data, $options, $ch);
@@ -639,6 +639,7 @@ class WhttpClass
                 if (is_callable($this->callback)) {
                     $this->data[$id]['request'] = $this->method;
                     $this->data[$id]['complete'] = $this->complete++;
+                    unset($this->data[$id]['request']['gany']);
                     $call_return = call_user_func_array($this->callback, array($this->data[$id]));
                     if ($call_return) {
                         $this->call_return[] = $call_return;

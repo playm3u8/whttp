@@ -98,10 +98,10 @@ if (!function_exists('left')) {
     {
         $pos = strpos( $str, $right_str);
         if($pos === false){
-            return ($mode)? $str: null;
+            return ($mode)? $str: '';
         }
         if (!$string = substr($str, 0, $pos)){
-            return ($mode)? $str: null;
+            return ($mode)? $str: '';
         }else{
             return $string;
         }
@@ -120,11 +120,11 @@ if (!function_exists('core')) {
     {
         $left = strpos($str, $leftStr);
         if ($left === false) {
-            return ($mode)? $str: null;
+            return ($mode)? $str: '';
         }
         $right = strpos($str, $rightStr, $left + strlen($leftStr));
         if ($left === false or $right === false) {
-            return ($mode)? $str: null;
+            return ($mode)? $str: '';
         }
         return substr($str, $left + strlen($leftStr), $right - $left - strlen($leftStr));
     }
@@ -141,7 +141,7 @@ if (!function_exists('right')) {
     {
         $pos = strrpos($str, $left_str);
         if($pos === false){
-            return ($mode)? $str: null;
+            return ($mode)? $str: '';
         }else{
             return substr($str, $pos + strlen($left_str));
         }
@@ -230,7 +230,7 @@ if (!function_exists('fast')) {
             if (isset($config[$val])) {
                 $config = $config[$val];
             } else {
-                return null;
+                return '';
             }
         }
         return $config;
@@ -246,7 +246,7 @@ if (!function_exists('proxyDownload')) {
      */
     function proxyDownload($url, $name=null) 
     {
-        if (empty($url)) return null;
+        if (empty($url)) return '';
         $ch  = curl_init($url);
         curl_setopt($ch, CURLOPT_REFERER, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
