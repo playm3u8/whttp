@@ -58,6 +58,17 @@ class Predis {
     }
 
     /**
+     * 获取KEY到期时间
+     * @Author   laoge
+     * @DateTime 2021-04-27
+     * @param    [type]     $key [description]
+     * @return   [type]          [description]
+     */
+    public function ttl($key) {
+        return $this->redis->ttl($key);
+    }
+
+    /**
      * 判断key是否存在
      * @param string $key KEY名称
      */

@@ -404,7 +404,6 @@ class WhttpClass
             curl_setopt_array($ch, $options[0]);
             if($this->isdown) $this->fptmp[(string)$ch] = tmpfile();
             $this->data = $this->getExec1($options[0], $ch);
-            $this->data['iscache']  = false;
             $this->curlcache($options, $this->data);
             curl_close($ch);
             return $this->data;
@@ -421,6 +420,7 @@ class WhttpClass
      */
     private function curlcache($options, $data=[])
     {
+        $this->data['cacheinfo']  = [];
         if (!array_key_exists("cache",$this->method)) return [];
 
         if (gettype($this->method['cache']) != 'NULL'){
@@ -446,7 +446,13 @@ class WhttpClass
         if (!$data) {
             if ($predis->has($cacid)) {
                 $this->data = unserialize(gzinflate($predis->get($cacid)));
-                if($this->data) return $this->data;
+                if($this->data) {
+                    $this->data['cacheinfo'] = [
+                        'cache_id'  => $cacid,
+                        'cache_exp' => $predis->ttl($cacid),
+                    ];
+                    return $this->data;
+                }
             } else {
                 return [];
             }
@@ -470,7 +476,10 @@ class WhttpClass
                     $this->redis_config['expire']   = $overtimedue;
                     $data['error'] = "Cache: ".$data['error'];
                 }
-                $data['iscache'] = true;
+                $this->data['cacheinfo'] = [
+                    'cache_id'  => $cacid,
+                    'cache_exp' => $this->redis_config['expire'],
+                ];
                 if ($data['headers'] || $data['body'] || $data['download']['size'] > 0) {
                     $predis->set($cacid, gzdeflate(serialize($data)), $this->redis_config['expire']);
                 }
