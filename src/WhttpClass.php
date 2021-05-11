@@ -342,7 +342,8 @@ class WhttpClass
         if ($this->ismulti == false || count($this->method['url']) == 1) {
             if(empty($return['error'])){
                 if ($this->progress) {
-                    printf("progress: [%-50s] %d%% Done\r"."\n", str_repeat('#',100/100*50), 100/100*100);  
+                    printf("download: [%-50s] %d%%\r"."\n", str_repeat('#',100/100*50), 100/100*100);
+                    printf('file: '.$return['download']['name']."\n");
                 }
             } else {
                 if ($this->progress) printf("\n");
@@ -962,6 +963,6 @@ class WhttpClass
         }
         $bar = $currentDownloadSize / $countDownloadSize * 100;
         $bar = (int)round($bar, 2);
-        printf("progress: [%-50s] %d%% Done\r", str_repeat('#',$bar/100*50), $bar/100*100);
+        printf("download: [%-50s] %d%%\r", str_repeat('#',$bar/100*50), $bar/100*100);
     }
 }
