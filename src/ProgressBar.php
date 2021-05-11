@@ -3,6 +3,7 @@ namespace PL;
 
 /**
  * PHP 控制台彩色文字和进度条绘制
+ * https://github.com/playm3u8/php-console-color
  */
 class ProgressBar {
 
