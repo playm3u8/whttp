@@ -343,7 +343,7 @@ class WhttpClass
             if(empty($return['error'])){
                 if ($this->progress) {
                     printf("download: [%-50s] %d%%\r"."\n", str_repeat('#',100/100*50), 100/100*100);
-                    printf('file: '.$return['download']['name']."\n");
+                    printf('file: '.$return['download']['path']."\n");
                 }
             } else {
                 if ($this->progress) printf("\n");
