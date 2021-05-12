@@ -229,13 +229,13 @@ class WhttpClass
         if ($this->ismulti) {
             return '';
         }
-        $return = $this->send();
-        if(!$return['headers']) return '';
+        $result = $this->send();
+        if(!$result['headers']) return '';
 
         if(empty($name)){
-            return $return['headers'];
+            return $result['headers'];
         } else {
-            return trim(fast($return, "headers.".$name));
+            return trim(fast($result, "headers.".$name));
         }
     }
 
@@ -244,9 +244,14 @@ class WhttpClass
      * @param  string $name 名称(.号分割)
      * @return string
      */
-    public function getCookie ()
+    public function getCookie ($name="")
     {
-        return $this->getHeaders("cookie");
+        $result = $this->getHeaders("cookie");
+        if(!empty($name)) {
+            return core($result, $name.'=', ';');
+        } else {
+            return $result;
+        }
     }
 
     /**
@@ -258,9 +263,9 @@ class WhttpClass
         if ($this->ismulti) {
             return '';
         }
-        $return = $this->send();
-        if(!$return['body']) return '';
-        return fast($return, "body");
+        $result = $this->send();
+        if(!$result['body']) return '';
+        return fast($result, "body");
     }
 
     /**
@@ -272,12 +277,12 @@ class WhttpClass
         if ($this->ismulti) {
             return '';
         }
-        $return = $this->send();
-        if(!$return['info']) return '';
+        $result = $this->send();
+        if(!$result['info']) return '';
         if(empty($name)){
-            return $return['info'];
+            return $result['info'];
         } else {
-            return fast($return, "info.".$name);
+            return fast($result, "info.".$name);
         }
     }
 
@@ -290,9 +295,9 @@ class WhttpClass
         if ($this->ismulti) {
             return '';
         }
-        $return = $this->send();
-        if($return['body']) return '';
-        return fast($return, "error");
+        $result = $this->send();
+        if($result['body']) return '';
+        return fast($result, "error");
     }
 
     /**
@@ -305,9 +310,9 @@ class WhttpClass
         if ($this->ismulti) {
             return '';
         }
-        $return = $this->send();
-        if(!$return['body']) return '';
-        $data = json_decode(trim($return['body'], chr(239) . chr(187) . chr(191)), true);
+        $result = $this->send();
+        if(!$result['body']) return '';
+        $data = json_decode(trim($result['body'], chr(239) . chr(187) . chr(191)), true);
         if(empty($name)) return $data;
         return fast($data, $name);
     }
@@ -319,9 +324,9 @@ class WhttpClass
      */
     public function getAll($name="")
     {
-        $return = $this->send();
-        if(!$return) return [];
-        return fast($return, $name);
+        $result = $this->send();
+        if(!$result) return [];
+        return fast($result, $name);
     }
 
     /**
@@ -341,18 +346,18 @@ class WhttpClass
         if(substr($this->method['fp_path'], -1) != "/") {
             $this->method['fp_path'] = $this->method['fp_path']."/";
         }
-        $return = $this->send($this->config($this->method));
+        $result = $this->send($this->config($this->method));
         if ($this->ismulti == false || count($this->method['url']) == 1) {
-            if(empty($return['error'])){
+            if(empty($result['error'])){
                 if ($this->progress) {
                     printf("download: [%-50s] %d%%\r"."\n", str_repeat('#',100/100*50), 100/100*100);
-                    printf('file: '.$return['download']['path']."\n");
+                    printf('file: '.$result['download']['path']."\n");
                 }
             } else {
                 if ($this->progress) printf("\n");
             }
         }
-        return $return;
+        return $result;
     }
 
     /**
@@ -583,7 +588,7 @@ class WhttpClass
             $this->method['fp_name'] = empty($file_name)? getRandstr():$file_name;
         }
 
-        $return = [
+        $result = [
             'error' => $data['error'],
             'download' => [
                 'name' => $this->method['fp_name'],
@@ -591,10 +596,10 @@ class WhttpClass
                 'size' => 0
             ]
         ];
-        if (!empty($data['error'])) return $return;
+        if (!empty($data['error'])) return $result;
         if($http_code != 200 && $http_code != 302) {
-            $return['error'] = "download code:".$http_code;
-            return $return;
+            $result['error'] = "download code:".$http_code;
+            return $result;
         }
 
         if(!file_exists($this->method['fp_path'])) {
@@ -602,21 +607,21 @@ class WhttpClass
         }
         $fopen = fopen($this->method['fp_path'].$this->method['fp_name'], "w");
         if(!$fopen) {
-            $return['error'] = "没有权限写入失败";
-            return $return;
+            $result['error'] = "没有权限写入失败";
+            return $result;
         }
         fseek($this->fptmp[(string)$ch], 0);
         $file_length = $this->pipe_streams($this->fptmp[(string)$ch], $fopen);
         @fclose($fopen);
         @fclose($this->fptmp[(string)$ch]);
         if ($file_length != $data['info']['size_download'] || $file_length == 0) {
-            $return['error'] = "下载失败,文件接收大小不对";
-            return $return;
+            $result['error'] = "下载失败,文件接收大小不对";
+            return $result;
         } else {
-            $return['download']['size']  = $file_length;
-            $return['download']['path']  = $this->method['fp_path'].$this->method['fp_name'];
+            $result['download']['size']  = $file_length;
+            $result['download']['path']  = $this->method['fp_path'].$this->method['fp_name'];
         }
-        return $return;
+        return $result;
     }
 
     /**
@@ -872,9 +877,9 @@ class WhttpClass
             if (strstr($header_STR, 'gzip') && strstr($header_STR, 'accept-encoding')) {
                 $options[CURLOPT_ENCODING] = 'gzip';              
             }
-            $return[$id] = $options;
+            $result[$id] = $options;
         }
-        return $return;
+        return $result;
     }
 
     /**

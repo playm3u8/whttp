@@ -374,7 +374,8 @@ if (!function_exists('urlencode_utf8')) {
      * @return   [type]          [description]
      */
     function urlencode_utf8($url = ""){
-        $url = rawurlencode($url);
+        // url地址需要先解码在编码，不然遇到已经编码的url，就会造成二次编码了。
+        $url = rawurlencode(rawurldecode($url));
         $a   = array("%3A", "%2F", "%40", "%3F","%3D","%26");
         $b   = array(":", "/", "@", "?", "=","&");
         $url = str_replace($a, $b, $url);
@@ -584,7 +585,7 @@ if (!function_exists('format_header')) {
         $value = strtolower($value);
         // 分割成数组
         $header = explode(PHP_EOL, $value);
-        if (strstr($value, 'set-cookie')) $array['set-cookie'] = Null;
+        if (strstr($value, 'set-cookie')) $array['set-cookie'] = '';
         // 把多行响应头信息转为组数数据
         foreach ($header as $value) {
             // 从左查找":"的位置
