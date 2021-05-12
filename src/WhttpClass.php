@@ -79,7 +79,10 @@ class WhttpClass
      * 默认请求头
      * @var array
      */
-    private $default_header = ['Accept-Encoding: gzip'];
+    private $default_header = [
+        'Accept-Encoding: gzip',
+        'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36',
+    ];
 
     /**
      * 默认Redis配置
