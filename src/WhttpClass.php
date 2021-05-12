@@ -216,7 +216,7 @@ class WhttpClass
      */
     public function getCode() 
     {
-        return $this->getHeaders("State.StatusCode");
+        return $this->getHeaders("state.statuscode");
     }
 
     /**
@@ -244,9 +244,9 @@ class WhttpClass
      * @param  string $name 名称(.号分割)
      * @return string
      */
-    public function getCookie ($name="")
+    public function getCookie ()
     {
-        return $this->getHeaders("Cookie");
+        return $this->getHeaders("cookie");
     }
 
     /**

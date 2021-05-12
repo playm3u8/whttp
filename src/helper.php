@@ -300,7 +300,7 @@ if (!function_exists('p')) {
             echo "<pre>";
             print_r($vars);
         } else {
-            echo $vars."<br>";
+            echo $vars."\n";
         }
         if($die) exit;
     }
@@ -580,9 +580,11 @@ if (!function_exists('format_header')) {
     function format_header(string $value) 
     {
         $array  = array();
+        if(empty($value)) return [];
+        $value = strtolower($value);
         // 分割成数组
         $header = explode(PHP_EOL, $value);
-        if (strstr($value, 'Set-Cookie')) $array['Set-Cookie'] = Null;
+        if (strstr($value, 'set-cookie')) $array['set-cookie'] = Null;
         // 把多行响应头信息转为组数数据
         foreach ($header as $value) {
             // 从左查找":"的位置
@@ -591,7 +593,7 @@ if (!function_exists('format_header')) {
                 // 取出返回请求头名称
                 $cName = substr($value, 0, $wz);
                 // 整理多行Cookie数据
-                if ($cName == "Set-Cookie") {
+                if ($cName == "set-cookie") {
                     // 获取Cookie值全部,里面会包含一些无用的信息需要去除掉
                     $cName_value = substr($value, $wz + 2);
                     if (strpos($cName_value, ';') === false) {
@@ -608,17 +610,17 @@ if (!function_exists('format_header')) {
             } else {
                 // 处理状态
                 if(preg_match_all('/(\d{1,2}\.\d{1,2})\s+(\d{3})\s+(.*)/', $value, $matches)){
-                    $array['State']['ProtocolVersion'] = $matches[1][0];
-                    $array['State']['StatusCode']      = $matches[2][0];
-                    $array['State']['ReasonPhrase']    = $matches[3][0];
+                    $array['state']['protocolversion'] = $matches[1][0];
+                    $array['state']['statuscode']      = $matches[2][0];
+                    $array['state']['reasonphrase']    = $matches[3][0];
                 }
             }
         }
         // 把Cookie移动到最后，强迫症需理解
-        if (array_key_exists('Set-Cookie', $array)) {
-            $uArray = $array['Set-Cookie'];
-            unset($array['Set-Cookie']);
-            $array['Cookies'] = $uArray;
+        if (array_key_exists('set-cookie', $array)) {
+            $uArray = $array['set-cookie'];
+            unset($array['set-cookie']);
+            $array['cookie'] = $uArray;
         }
         return $array;
     }
