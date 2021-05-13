@@ -216,7 +216,7 @@ class WhttpClass
      */
     public function getCode() 
     {
-        return $this->getHeaders("state.statuscode");
+        return (int)$this->getHeaders("state.statuscode");
     }
 
     /**
@@ -224,7 +224,7 @@ class WhttpClass
      * @param  string $name 名称(.号分割)
      * @return string       
      */
-    public function getHeaders ($name="") 
+    public function getHeaders (string $name="") 
     {
         if ($this->ismulti) {
             return '';
@@ -244,7 +244,7 @@ class WhttpClass
      * @param  string $name 名称(.号分割)
      * @return string
      */
-    public function getCookie ($name="")
+    public function getCookie (string $name="")
     {
         $result = $this->getHeaders("cookie");
         if(!empty($name)) {
@@ -272,7 +272,7 @@ class WhttpClass
      * 获取请求信息(不支持并发)
      * @return array
      */
-    public function getInfo($name="") 
+    public function getInfo(string $name="") 
     { 
         if ($this->ismulti) {
             return '';
@@ -305,7 +305,7 @@ class WhttpClass
      * @param  string $name 名称(.号分割)
      * @return array       
      */
-    public function getJson($name="")
+    public function getJson(string $name="")
     {
         if ($this->ismulti) {
             return '';
@@ -322,7 +322,7 @@ class WhttpClass
      * @param  string $name 名称(.号分割)
      * @return array
      */
-    public function getAll($name="")
+    public function getAll(string $name="")
     {
         $result = $this->send();
         if(!$result) return [];
