@@ -597,7 +597,8 @@ class WhttpClass
             ]
         ];
         if (!empty($data['error'])) return $result;
-        if($http_code != 200 && $http_code != 302) {
+
+        if (in_array($http_code, [200,302,206]) == false) {
             $result['error'] = "download code:".$http_code;
             return $result;
         }
@@ -722,9 +723,13 @@ class WhttpClass
      */
     private function config($out) 
     {
-        if (!empty($_SERVER['HTTP_USER_AGENT'])){
+        if (empty($_SERVER['HTTP_USER_AGENT']) == false) {
             $User_Agent = ['User-Agent: '.$_SERVER['HTTP_USER_AGENT']];
-            $this->default_header = arrUp($this->default_header, $User_Agent);
+            $this->default_header = update_header($this->default_header, $User_Agent);
+        }
+
+        if (empty($out['header']) == false) {
+            $this->default_header = update_header($this->default_header, $out['header']);
         }
 
         if (gettype($out['url']) == "array") {
@@ -783,7 +788,7 @@ class WhttpClass
                 CURLOPT_FILETIME       => true,
                 CURLOPT_AUTOREFERER    => true,
                 CURLOPT_REFERER        => empty($out['referer'])? $url : $out['referer'],
-                CURLOPT_HTTPHEADER     => arrUp($this->default_header, empty($out['header'])? []:$out['header']),
+                CURLOPT_HTTPHEADER     => $this->default_header,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_NOBODY         => false,
             ];
@@ -799,6 +804,7 @@ class WhttpClass
             if(array_key_exists('nobody', $out)) {
                 if (is_null($out['nobody']) || $out['nobody']) {
                     $options[CURLOPT_NOBODY] = true;
+                    $options[CURLOPT_CUSTOMREQUEST] = 'HEAD';
                 } else {
                     $options[CURLOPT_NOBODY] = false;
                 }

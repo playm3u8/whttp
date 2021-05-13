@@ -148,14 +148,14 @@ if (!function_exists('right')) {
     }
 }
 
-if (!function_exists('arrUp')) {
+if (!function_exists('update_header')) {
     /**
-     * 一维数组合并更新
-     * @param  array $array1 被更新数组
-     * @param  array $array2 新数组
+     * 合并更新header
+     * @param  array $array1 旧header
+     * @param  array $array2 新header
      * @return array
      */
-    function arrUp($array, $array2)
+    function update_header($array, $array2)
     {
         $arr = array();
         if(!$array2) return $array;
@@ -169,12 +169,12 @@ if (!function_exists('arrUp')) {
             $i = 0;
             foreach ($array as $va) {
                 $b = explode(':', $va);
-                if ($b[0] == $a[0]) {
-                    $array[$i] = $v;
+                if (strtolower(trim($b[0])) == strtolower(trim($a[0]))) {
+                    $array[$i] = trim($v);
                     break;
                 }
                 if (count($array) == $i + 1) {
-                    $array[$i + 1] = $v;
+                    $array[$i + 1] = trim($v);
                 }
                 $i++;
             }
