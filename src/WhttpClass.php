@@ -103,6 +103,8 @@ class WhttpClass
     private $ismulti    = false;
     private $isdown     = false;
     private $progress   = false;
+    private $file       = 12304;
+    private $path       = 12305;
 
     /**
      * 魔术方法 有不存在的操作的时候执行
@@ -216,7 +218,7 @@ class WhttpClass
      */
     public function getCode() 
     {
-        return (int)$this->getHeaders("state.statuscode");
+        return (int)$this->getHeaders("state.code");
     }
 
     /**
@@ -338,14 +340,9 @@ class WhttpClass
     {
         $this->progress = $progress;
         $this->isdown = true;
-        $this->method['fp_path'] = isset($this->method['savepath'])? $this->method['savepath']:"";
+        $this->method['fp_path'] = isset($this->method['savepath'])? $this->method['savepath']:"./";
         $this->method['fp_name'] = isset($this->method['savename'])? $this->method['savename']:"";
-        if (empty($this->method['fp_path'])) {
-            $this->Error("保存文件路径不能为空");
-        } 
-        if(substr($this->method['fp_path'], -1) != "/") {
-            $this->method['fp_path'] = $this->method['fp_path']."/";
-        }
+
         $result = $this->send($this->config($this->method));
         if ($this->ismulti == false || count($this->method['url']) == 1) {
             if(empty($result['error'])){
@@ -358,6 +355,41 @@ class WhttpClass
             }
         }
         return $result;
+    }
+
+    /**
+     * 分段批量下载文件(目前只能支持单请求)
+     * @Author   laoge
+     * @DateTime 2021-05-13
+     * @param    int|integer $threads [description]
+     * @return   [type]               [description]
+     */
+    public function getDownloadEx(int $threads=10): array
+    {
+        $return_data = [
+            'info'      => [],
+            'error'     => '',
+            'body'      => '',
+            'download'  => [],
+            'cacheinfo' => []
+        ];
+        $fp_path = isset($this->method['savepath'])? $this->method['savepath']:"./";
+        $fp_name = isset($this->method['savename'])? $this->method['savename']:"";
+        $options = $this->config($this->method);
+        if (count($options) > 1) {
+            $return_data['error'] = '只能接收一个url请求';
+            return $return_data;
+        }
+        // 内部请求获取文件总大小
+        if ($url_info = get_urlfileslicing($options[0][CURLOPT_URL], $threads)) {
+            // 内部并发请求
+            $result = get($url_info)->savepath($fp_path)->concurrent($threads)->getDownload();
+            // 再合并文件
+            p($result);
+        } else {
+            $return_data['error'] = '下载url的Header获取失败';
+            return $return_data;
+        }
     }
 
     /**
@@ -549,7 +581,7 @@ class WhttpClass
             $data['headers'] = format_header(end($headerStr));
             if (count($headerStr) > 1) {
                 for ($i=0; $i < count($headerStr)-1; $i++) {
-                    $data['headers']['Father'][$i] = format_header($headerStr[$i]);
+                    $data['headers']['father'][$i] = format_header($headerStr[$i]);
                 }
             }
             $data['body'] = substr($exec, $data['info']['header_size']);
@@ -582,10 +614,26 @@ class WhttpClass
      */
     private function down_files($data, $options, $ch)
     {
+        $dulifile = false;
+        if (isset($options[$this->file])) {
+            if (empty($options[$this->file]) == false) {
+                $dulifile = true;
+                $this->method['fp_name'] = $options[$this->file];
+            }
+        }
+
+        if (isset($options[$this->path])) {
+            if (empty($options[$this->path]) == false) {
+                $this->method['fp_path'] = $options[$this->path];
+            }
+        }
+
         $http_code = $data['info']['http_code'];
-        if (empty($this->method['fp_name']) || $this->ismulti) {
-            $file_name = getUrlfile($options[CURLOPT_URL]);
-            $this->method['fp_name'] = empty($file_name)? getRandstr():$file_name;
+        if ($dulifile == false) {
+            if (empty($this->method['fp_name']) || $this->ismulti) {
+                $file_name = getUrlfile($options[CURLOPT_URL]);
+                $this->method['fp_name'] = empty($file_name)? getRandstr():$file_name;
+            }
         }
 
         $result = [
@@ -596,11 +644,16 @@ class WhttpClass
                 'size' => 0
             ]
         ];
+
         if (!empty($data['error'])) return $result;
 
-        if (in_array($http_code, [200,302,206]) == false) {
+        if (in_array($http_code, [200, 302, 206]) == false) {
             $result['error'] = "download code:".$http_code;
             return $result;
+        }
+
+        if(substr($this->method['fp_path'], -1) != "/") {
+            $this->method['fp_path'] = $this->method['fp_path']."/";
         }
 
         if(!file_exists($this->method['fp_path'])) {
@@ -723,6 +776,8 @@ class WhttpClass
      */
     private function config($out) 
     {
+        $urls = [];
+        if (!$out) return [];
         if (empty($_SERVER['HTTP_USER_AGENT']) == false) {
             $User_Agent = ['User-Agent: '.$_SERVER['HTTP_USER_AGENT']];
             $this->default_header = update_header($this->default_header, $User_Agent);
@@ -735,38 +790,44 @@ class WhttpClass
         if (gettype($out['url']) == "array") {
             if (empty($out['url'][0])) {
                 $this->Error("数组url不能为空");
-            }
-        } elseif (gettype($out['url']) == "NULL") {
-            $this->Error("Url不能为空");
-        }
-
-        if (!$out) return [];
-        if (gettype($out['url']) == 'array') 
-        {
-            if(count($out['url']) > 1){
-                $urls    = $out['url'];
             } else {
-                $urls[0] = $out['url'][0];
+                if(count($out['url']) > 1){
+                    $urls    = $out['url'];
+                } else {
+                    $urls[0] = $out['url'][0];
+                }
             }
         } elseif (gettype($out['url']) == 'string') {
-            $urls[0] = $out['url'];
-        } else {
-            return [];
+
+            if (empty($out['url'])) {
+                $this->Error("请求url不能为空");
+            } else {
+                $urls[0] = $out['url'];
+            }
         }
 
-        if(array_key_exists('concurrent' ,$this->method)){
-            if($this->method['concurrent'] >= 1){
-                $this->maxConcurrent = $this->method['concurrent'];
+        if (isset($out['concurrent'])) {
+            if ($out['concurrent'] >= 1) {
+                $this->maxConcurrent = $out['concurrent'];
             } else {
                 $this->Error("并发数必须大于1");
             }
         }
 
-        foreach ($urls as $id => $url) {
+        
+        foreach ($urls as $id => $info) {
+            $param = [];
+            // $url类型有2种
+            if (is_array($info)) {
+                $url = $info['url'];
+                $param = isset($info['param'])? $info['param']:[];
+            } else {
+                $url = $info;
+            }
             $urlencode_utf8 = false;
             if ($out['method'] == 'GET') {
                 if (isset($out['data'])) {
-                    if(is_array($out['data'])){
+                    if (is_array($out['data'])) {
                         $urlencode_utf8 = true;
                         $url = $url."?".merge_string($out['data']);
                     } else {
@@ -790,7 +851,7 @@ class WhttpClass
                 CURLOPT_REFERER        => empty($out['referer'])? $url : $out['referer'],
                 CURLOPT_HTTPHEADER     => $this->default_header,
                 CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_NOBODY         => false,
+                CURLOPT_NOBODY         => false
             ];
 
             if(array_key_exists('jump', $out)) {
@@ -804,7 +865,6 @@ class WhttpClass
             if(array_key_exists('nobody', $out)) {
                 if (is_null($out['nobody']) || $out['nobody']) {
                     $options[CURLOPT_NOBODY] = true;
-                    $options[CURLOPT_CUSTOMREQUEST] = 'HEAD';
                 } else {
                     $options[CURLOPT_NOBODY] = false;
                 }
@@ -882,6 +942,25 @@ class WhttpClass
             $header_STR = strtolower(implode(PHP_EOL, $options[CURLOPT_HTTPHEADER]));
             if (strstr($header_STR, 'gzip') && strstr($header_STR, 'accept-encoding')) {
                 $options[CURLOPT_ENCODING] = 'gzip';              
+            }
+            // 独立修改每个请求参数
+            // 修改请求头
+            if (isset($param['header'])) {
+                if (is_array($param['header'])) {
+                    $options[CURLOPT_HTTPHEADER] = update_header($this->default_header, $param['header']);
+                }
+            }
+            // 保存文件名称
+            if (isset($param['savename'])) {
+                if (empty($param['savename']) == false) {
+                    $options[$this->file] = $param['savename'];
+                }
+            }
+            // 保存文件路径
+            if (isset($param['savepath'])) {
+                if (empty($param['savepath']) == false) {
+                    $options[$this->path] = $param['savepath'];
+                }
             }
             $result[$id] = $options;
         }

@@ -183,6 +183,93 @@ if (!function_exists('update_header')) {
     }
 }
 
+if (!function_exists('get_urlfileslicing')) {
+    /**
+     * 网络文件切片
+     * @Author   laoge
+     * @DateTime 2021-05-13
+     * @param    string     $url [description]
+     * @return   [type]          [description]
+     */
+    function get_urlfileslicing(string $url, int $count=20): array
+    {
+        $url_info = [];
+        // 内部请求获取文件总大小
+        $file_length = get($url)->nobody()->timeoutms(1000*10)->getHeaders('content-length');
+        if ($file_length > 0) {
+            $chunkCount = $count;
+            $step = ceil($file_length / $chunkCount);
+            for ($i = 0; $i < $chunkCount; $i++) {
+                $start = $i * $step;
+                $end = (($i+1) * $step) -1;
+                if($end > $file_length) {
+                    $end = $file_length;
+                }
+                $range = $start. '-'. $end;
+                $url_info[$i]['url']   = $url;
+                $url_info[$i]['param'] = [
+                    'header'   => ["Range: bytes={$range}"],
+                    'savename' => getRandstr().'_'.$range,
+                    'savepath' => sys_get_temp_dir(),
+                ];
+                // echo("总大小{$file_length},共计{$chunkCount}片，第{$i}片下载完成, range:". $range ."\n");
+            }
+        }
+        return $url_info;
+    }
+}
+
+if (!function_exists('get_headersEx')) {
+    /**
+     * 获取请求Headers
+     * @Author   laoge
+     * @DateTime 2021-05-13
+     * @param    string        $url     [description]
+     * @param    float|integer $timeout 读取超时时间，单位为秒（s），用 float 指定(e.g. 10.5)。
+     * @param    bool|boolean  $follow  跟随 Location header 的重定向。设置为 0 以禁用。
+     * @return   [type]                 [description]
+     */
+    function get_headersEx(string $url, float $timeout=30, bool $follow=true): array
+    {
+
+        $arr_headers = [];
+        $str_headers = '';
+        // 参数参考
+        // http://php.net/manual/zh/context.http.php
+        // https://www.php.net/manual/en/context.http.php
+        $param = [
+            'http' => [
+                'method'  => 'GET',
+                'timeout' => (float) $timeout,
+                'follow_location' => $follow,
+            ]
+        ];
+        try {
+            // 赋值默认配置
+            stream_context_set_default($param);
+            if ($data = get_headers($url)) {
+                foreach ($data as $key => $value) {
+                    if (substr($value, 0, 5) == 'HTTP/' && $key > 0){
+                        $str_headers .= "\r\n".$value."\r\n";
+                    } else {
+                        $str_headers .= $value."\r\n";
+                    }
+                }
+                $str_headers = explode("\r\n"."\r\n", $str_headers);
+                $arr_headers['end'] = format_header(end($str_headers));
+                if (count($str_headers) > 1) {
+                    for ($i=0; $i < count($str_headers)-1; $i++) {
+                        $arr_headers['father'][$i] = format_header($str_headers[$i]);
+                    }
+                }
+            }
+            return $arr_headers;
+        } catch (\Exception $e) {
+            return ['error' => $e->getMessage()];
+        }
+    }
+}
+
 if (!function_exists('setUrl')) {
     /**
      * 修改和设置Url数据
@@ -580,7 +667,7 @@ if (!function_exists('format_header')) {
      */
     function format_header(string $value) 
     {
-        $array  = array();
+        $array = [];
         if(empty($value)) return [];
         $value = strtolower($value);
         // 分割成数组
@@ -611,9 +698,9 @@ if (!function_exists('format_header')) {
             } else {
                 // 处理状态
                 if(preg_match_all('/(\d{1,2}\.\d{1,2})\s+(\d{3})\s+(.*)/', $value, $matches)){
-                    $array['state']['protocolversion'] = $matches[1][0];
-                    $array['state']['statuscode']      = $matches[2][0];
-                    $array['state']['reasonphrase']    = $matches[3][0];
+                    $array['state']['version'] = $matches[1][0];
+                    $array['state']['code']    = $matches[2][0];
+                    $array['state']['reason']  = $matches[3][0];
                 }
             }
         }

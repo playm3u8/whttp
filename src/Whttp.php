@@ -99,7 +99,7 @@ class Whttp extends WhttpClass
         
         'savename'  => ['string'],
         // 下载保存文件名称(批量下载无效)(默认下载地址获取文件名称)
-        
+
         'concurrent' => ['integer|NULL'],
         // 设置并发数量限制(默认为10)
 
@@ -179,6 +179,8 @@ class Whttp extends WhttpClass
                     return $class->method($func)->url($params[0]);
                 } else if (count($params) == 2) {
                     return $class->method($func)->url($params[0])->data($params[1]);
+                } elseif (count($params) == 0) {
+                    throw new Exception("{$func}的参数太多少啦");
                 } else {
                     throw new Exception("{$func}的参数太多啦");
                 }
