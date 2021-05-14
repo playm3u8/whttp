@@ -348,7 +348,7 @@ class WhttpClass
         if ($this->ismulti == false || count($this->method['url']) == 1) {
             if(empty($result['error'])){
                 if ($this->progress) {
-                    printf("download: [%-50s] %d%%\r"."\n", str_repeat('#',100/100*50), 100/100*100);
+                    ProgressBar::progressBarPercent('Download:', 100, 50, ['█',' ']);
                     printf('file: '.$result['download']['path']."\n");
                 }
             } else {
@@ -384,6 +384,7 @@ class WhttpClass
         // 内部请求获取文件总大小
         if ($url_info = get_urlfileslicing($options[0][CURLOPT_URL], $threads)) {
             // echo 'file: '$fp_name."\n";
+            ProgressBar::progressBarPercent('Download:', 2, 50, ['█',' ']);
             // 内部并发请求
             if ($progress) {
                 get($url_info)->concurrent($threads)
@@ -1115,6 +1116,6 @@ class WhttpClass
         }
         $bar = $currentDownloadSize / $countDownloadSize * 100;
         $bar = (int)round($bar, 2);
-        printf("download: [%-50s] %d%%\r", str_repeat('#',$bar/100*50), $bar/100*100);
+        ProgressBar::progressBarPercent('Download:', $bar, 50, ['█',' ']);
     }
 }
