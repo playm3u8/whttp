@@ -126,7 +126,8 @@ class ProgressBar {
 		if($progress == 100) {
 			$text .= PHP_EOL;
 		}
-		return $text;
+		echo $text;
+		// return $text;
 	}
 
 	/**
@@ -155,6 +156,7 @@ class ProgressBar {
 		if($progress[0] >= $progress[1]) {
 			$text .= PHP_EOL;
 		}
-		return $text;
+		echo $text;
+		// return $text;
 	}
 }

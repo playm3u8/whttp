@@ -195,10 +195,16 @@ if (!function_exists('get_urlfileslicing')) {
     {
         $url_info = [];
         // 内部请求获取文件总大小
-        $file_length = get($url)->nobody()->timeoutms(1000*10)->getHeaders('content-length');
+        $result = get($url)->nobody()->timeoutms(1000*10);
+        $file_length   = $result->getHeaders('content-length');
+        $accept_ranges = $result->getHeaders('accept-ranges');
+        if ($accept_ranges != 'bytes') {
+            return [];
+        }
         if ($file_length > 0) {
             $chunkCount = $count;
             $step = ceil($file_length / $chunkCount);
+            $_exp = getRandstr();
             for ($i = 0; $i < $chunkCount; $i++) {
                 $start = $i * $step;
                 $end = (($i+1) * $step) -1;
@@ -209,13 +215,64 @@ if (!function_exists('get_urlfileslicing')) {
                 $url_info[$i]['url']   = $url;
                 $url_info[$i]['param'] = [
                     'header'   => ["Range: bytes={$range}"],
-                    'savename' => getRandstr().'_'.$range,
+                    'savename' => "whttp_".$_exp.'-'.$range,
                     'savepath' => sys_get_temp_dir(),
+                    'file_length' => $file_length
                 ];
                 // echo("总大小{$file_length},共计{$chunkCount}片，第{$i}片下载完成, range:". $range ."\n");
             }
         }
         return $url_info;
+    }
+}
+
+if (!function_exists('path_suffix')) {
+    /**
+     * 给路径后面加上/
+     * @param  string $filePath [description]
+     * @return [type]           [description]
+     */
+    function path_suffix(string $filePath)
+    {
+        if (substr($filePath, -1) == "/") {
+            return $filePath;
+        } else {
+            return $filePath."/";
+        }
+    }
+}
+
+if (!function_exists('validation_url')) {
+    /**
+     * 效验URL地址
+     * @param  string $filePath [description]
+     * @return [type]           [description]
+     */
+    function validation_url(string $url)
+    {
+        if (substr($url, 0, 7) != "http://" || substr($url, 0, 8) != "https://") {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+if (!function_exists('read_file')) {
+    /**
+     * 读入二进制数据
+     * @param  string $fileName [description]
+     * @return [type]           [description]
+     */
+    function read_file(string $fileName)
+    {
+        $handle = @fopen($fileName, "r");
+        if ($handle) {
+            return fread($handle, filesize($fileName));
+            fclose($handle);
+        } else {
+            return "";
+        }
     }
 }
 

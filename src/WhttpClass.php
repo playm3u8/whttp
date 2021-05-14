@@ -8,6 +8,7 @@
 // +----------------------------------------------------------------------
 namespace PL;
 use Exception;
+use PL\ProgressBar;
 
 class WhttpClass
 {
@@ -358,20 +359,17 @@ class WhttpClass
     }
 
     /**
-     * 分段批量下载文件(目前只能支持单请求)
+     * 多线程下载文件(目前只能支持单请求)
      * @Author   laoge
      * @DateTime 2021-05-13
      * @param    int|integer $threads [description]
      * @return   [type]               [description]
      */
-    public function getDownloadEx(int $threads=10): array
+    public function getDownloadEx(int $threads=10, bool $progress=false): array
     {
         $return_data = [
-            'info'      => [],
             'error'     => '',
-            'body'      => '',
             'download'  => [],
-            'cacheinfo' => []
         ];
         $fp_path = isset($this->method['savepath'])? $this->method['savepath']:"./";
         $fp_name = isset($this->method['savename'])? $this->method['savename']:"";
@@ -380,14 +378,61 @@ class WhttpClass
             $return_data['error'] = '只能接收一个url请求';
             return $return_data;
         }
+        if (empty($fp_name)) {
+            $fp_name = getUrlfile($options[0][CURLOPT_URL]);
+        }
         // 内部请求获取文件总大小
         if ($url_info = get_urlfileslicing($options[0][CURLOPT_URL], $threads)) {
+            // echo 'file: '$fp_name."\n";
             // 内部并发请求
-            $result = get($url_info)->savepath($fp_path)->concurrent($threads)->getDownload();
-            // 再合并文件
-            p($result);
+            if ($progress) {
+                get($url_info)->concurrent($threads)
+                    ->gany(function($data){
+                        $count = count($data['request']['url']);
+                        $speed = $data['complete']+1;
+                        $progress =  $speed / $count * 100;
+                        ProgressBar::progressBarPercent('Download:', $progress, 50, ['█',' ']);
+                    })->getDownload();
+            } else {
+                get($url_info)->concurrent($threads)->getDownload();
+            }
+            // 验证文件片段是否下载完成
+            foreach ($url_info as $value1) {
+                if (!$tmpfile = file_exists(path_suffix($value1['param']['savepath']).$value1['param']['savename'])) {
+                    $return_data['error'] = '文件片段下载缺漏,请重新下载';
+                    break;
+                }
+            }
+            if (empty($return_data['error'])) {
+                // 合并文件
+                $savefile = path_suffix($fp_path).$fp_name;
+                try {
+                    $fp = fopen($savefile, 'w+');
+                    fseek($fp, 0);
+                    foreach ($url_info as $value2) {
+                        $file  = path_suffix($value2['param']['savepath']).$value2['param']['savename'];
+                        $bytes = read_file($file);
+                        fwrite($fp, $bytes, strlen($bytes));
+                        unlink($file);
+                    }
+                    fclose($fp);
+                    if ($url_info[0]['param']['file_length'] != filesize($savefile)) {
+                        $return_data['error'] = '文件下载失败,下载文件大小不匹配';
+                    } else {
+                        $return_data['download']['name'] = $fp_name;
+                        $return_data['download']['path'] = $savefile;
+                        $return_data['download']['size'] = filesize($savefile);
+                    }
+                } catch (\Exception $e) {
+                    $return_data['error'] = $e->getMessage();
+                }
+            }
+            if (empty($return_data['error'])) {
+                $this->delete_tmp($url_info[0]['param']['savename']);
+            }
+            return $return_data;
         } else {
-            $return_data['error'] = '下载url的Header获取失败';
+            $return_data['error'] = '下载url的Header获取失败,或不支持切片下载';
             return $return_data;
         }
     }
@@ -652,19 +697,17 @@ class WhttpClass
             return $result;
         }
 
-        if(substr($this->method['fp_path'], -1) != "/") {
-            $this->method['fp_path'] = $this->method['fp_path']."/";
-        }
-
+        $this->method['fp_path'] = path_suffix($this->method['fp_path']);
         if(!file_exists($this->method['fp_path'])) {
             mkdir ($this->method['fp_path'], 0777, true);
         }
-        $fopen = fopen($this->method['fp_path'].$this->method['fp_name'], "w");
+
+        $fopen = @fopen($this->method['fp_path'].$this->method['fp_name'], "w");
         if(!$fopen) {
             $result['error'] = "没有权限写入失败";
             return $result;
         }
-        fseek($this->fptmp[(string)$ch], 0);
+        @fseek($this->fptmp[(string)$ch], 0);
         $file_length = $this->pipe_streams($this->fptmp[(string)$ch], $fopen);
         @fclose($fopen);
         @fclose($this->fptmp[(string)$ch]);
@@ -814,7 +857,6 @@ class WhttpClass
             }
         }
 
-        
         foreach ($urls as $id => $info) {
             $param = [];
             // $url类型有2种
@@ -824,6 +866,11 @@ class WhttpClass
             } else {
                 $url = $info;
             }
+
+            if (validation_url($url) == false) {
+                $this->Error("请求URL地址有误,请检查");
+            }
+
             $urlencode_utf8 = false;
             if ($out['method'] == 'GET') {
                 if (isset($out['data'])) {
@@ -836,13 +883,12 @@ class WhttpClass
                     unset($out['data']);
                 }
             }
-
             $options = [ 
                 CURLOPT_URL            => ($urlencode_utf8)? $url:urlencode_utf8($url),
                 CURLOPT_NOSIGNAL       => true,
                 CURLOPT_TIMEOUT_MS     => defined("CURL_TIMEOUT_MS")? CURL_TIMEOUT_MS:5000,
                 CURLOPT_CONNECTTIMEOUT_MS => defined("CURL_CONNECTTIMEOUT_MS")? CURL_CONNECTTIMEOUT_MS:5000,
-                CURLOPT_HEADER         => empty($out['fp_path'])? true : false,
+                CURLOPT_HEADER         => $this->isdown ? false : true,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_CUSTOMREQUEST  => $out['method'],
                 CURLOPT_MAXREDIRS      => 4,
@@ -892,7 +938,7 @@ class WhttpClass
             }
 
             if(!empty($out['cookie'])) $options[CURLOPT_COOKIE] = $out['cookie'];
-            if (isset($out['fp_path'])) {
+            if ($this->isdown) {
                 if (count($urls) == 1) {
                     if($this->progress) {
                         $options[CURLOPT_NOPROGRESS] = false;
@@ -978,6 +1024,19 @@ class WhttpClass
         $size = 0;
         while (!feof($in)) $size += fwrite($out,fread($in,8192));
         return $size;
+    }
+
+    /**
+     * 清除不完整的临时文件
+     * @Author   laoge
+     * @DateTime 2021-05-14
+     * @param    string     $savename [description]
+     * @return   [type]               [description]
+     */
+    private function delete_tmp(string $savename) 
+    {
+        $mask = "whhtp_".core($savename, 'htp_', '-')."-*";
+        array_map( "unlink", glob($mask));
     }
 
     /**
