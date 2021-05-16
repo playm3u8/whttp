@@ -384,14 +384,14 @@ class WhttpClass
         // 内部请求获取文件总大小
         if ($url_info = get_urlfileslicing($options[0][CURLOPT_URL], $threads)) {
             // echo 'file: '$fp_name."\n";
-            ProgressBar::progressBarPercent('Download:', 2, 50, ['█',' ']);
+            ProgressBar::progressBarPercent('Download:', 1, 50, ['█',' ']);
             // 内部并发请求
             if ($progress) {
+                $i = 1;
                 get($url_info)->concurrent($threads)
-                    ->gany(function($data){
+                    ->gany(function($data) use (&$i){
                         $count = count($data['request']['url']);
-                        $speed = $data['complete']+1;
-                        $progress =  $speed / $count * 100;
+                        $progress =  $i++ / $count * 100;
                         ProgressBar::progressBarPercent('Download:', $progress, 50, ['█',' ']);
                     })->getDownload();
             } else {
