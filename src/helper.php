@@ -726,7 +726,6 @@ if (!function_exists('format_header')) {
     {
         $array = [];
         if(empty($value)) return [];
-        $value = strtolower($value);
         // 分割成数组
         $header = explode(PHP_EOL, $value);
         if (strstr($value, 'set-cookie')) $array['set-cookie'] = '';
@@ -736,7 +735,7 @@ if (!function_exists('format_header')) {
             $wz = strpos($value, ":");
             if ($wz !== false) {
                 // 取出返回请求头名称
-                $cName = substr($value, 0, $wz);
+                $cName = strtolower(substr($value, 0, $wz));
                 // 整理多行Cookie数据
                 if ($cName == "set-cookie") {
                     // 获取Cookie值全部,里面会包含一些无用的信息需要去除掉
