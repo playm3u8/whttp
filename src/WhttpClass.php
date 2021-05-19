@@ -1100,10 +1100,10 @@ class WhttpClass
 
             if (isset($this->dataSize[3])) {
                 if (count($this->dataSize[3]) < 2) {
-                    ProgressBar::progressBarPercent('Download:', $progress, 50, ['█',' ']);
+                    ProgressBar::progressBarPercent(['Download:', getFilesize($downloadSize)], $progress, 50, ['█',' ']);
                 }
             } else {
-                ProgressBar::progressBarPercent('Download:', $progress, 50, ['█',' ']);
+                ProgressBar::progressBarPercent(['Download:', getFilesize($downloadSize)], $progress, 50, ['█',' ']);
             }
         } 
 
@@ -1113,4 +1113,6 @@ class WhttpClass
 
         }
     }
+
+
 }
