@@ -375,19 +375,29 @@ class WhttpClass
         if (empty($fp_name)) {
             $fp_name = getUrlfile($options[0][CURLOPT_URL]);
         }
+        $param = [
+            'url'     => $options[0][CURLOPT_URL],
+            'header'  => $options[0][CURLOPT_HTTPHEADER]
+        ];
         // 内部请求获取文件总大小
-        if ($url_info = get_urlfileslicing($options[0][CURLOPT_URL], $threads)) {
+        if ($url_info = get_urlfileslicing($param['url'], $threads, $param['header'])) {
             // 内部并发请求
-            get($url_info)->concurrent($threads)->getDownload($progress);
+            get($url_info)->header($param['header'])->concurrent($threads)->getDownload($progress);
             // 验证文件片段是否下载完成
             foreach ($url_info as $value1) {
-                if (!$tmpfile = file_exists(path_suffix($value1['param']['savepath']).$value1['param']['savename'])) {
+                $tmpfile = path_suffix($value1['param']['savepath']).$value1['param']['savename'];
+                if (!file_exists($tmpfile)) {
                     $return_data['error'] = '文件片段下载缺漏,请重新下载';
                     break;
+                } else {
+                    $difference = filesize($tmpfile) - $value1['param']['block_size'];
+                    if ($difference > 1 || $difference < 0) {
+                        $return_data['error'] = '文件片段大小不一致,请重新下载';
+                        break;
+                    }
                 }
             }
             if (empty($return_data['error'])) {
-                // 合并文件
                 $savefile = path_suffix($fp_path).$fp_name;
                 try {
                     $fp = fopen($savefile, 'w+');
@@ -410,13 +420,13 @@ class WhttpClass
                     $return_data['error'] = $e->getMessage();
                 }
             }
+
             if (empty($return_data['error'])) {
                 $this->delete_tmp($url_info[0]['param']['savename']);
             }
             return $return_data;
         } else {
-            $return_data['error'] = '下载url的Header获取失败,或不支持切片下载';
-            return $return_data;
+            return $this->getDownload($progress);
         }
     }
 

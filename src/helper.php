@@ -191,11 +191,13 @@ if (!function_exists('get_urlfileslicing')) {
      * @param    string     $url [description]
      * @return   [type]          [description]
      */
-    function get_urlfileslicing(string $url, int $count=20): array
+    function get_urlfileslicing(string $url, int $count=20, array $header): array
     {
         $url_info = [];
-        // 内部请求获取文件总大小
-        $result = get($url)->nobody()->timeoutms(1000*10);
+        $result = get($url)->header($header)->nobody()->timeoutms(1000*10);
+        if ($result->getCode() != 200) {
+            return [];
+        }
         $file_length   = $result->getHeaders('content-length');
         $accept_ranges = $result->getHeaders('accept-ranges');
         if ($accept_ranges != 'bytes') {
@@ -217,9 +219,9 @@ if (!function_exists('get_urlfileslicing')) {
                     'header'   => ["Range: bytes={$range}"],
                     'savename' => "whttp_".$_exp.'-'.$range,
                     'savepath' => sys_get_temp_dir(),
+                    'block_size' => $end - $start,
                     'file_length' => $file_length
                 ];
-                // echo("总大小{$file_length},共计{$chunkCount}片，第{$i}片下载完成, range:". $range ."\n");
             }
         }
         return $url_info;
