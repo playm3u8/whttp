@@ -100,12 +100,17 @@ class WhttpClass
         'callback' => null,  // 缓存数据先处理,选择性进行数据缓存(true:缓存,false:不缓存)
     ];
 
-    private $downloaded = false;
     private $ismulti    = false;
+
     private $isdown     = false;
+
     private $progress   = false;
+
     private $file       = 12304;
+
     private $path       = 12305;
+
+    private $dataSize;
 
     /**
      * 魔术方法 有不存在的操作的时候执行
@@ -315,7 +320,7 @@ class WhttpClass
         }
         $result = $this->send();
         if(!$result['body']) return '';
-        $data = json_decode(trim($result['body'], chr(239) . chr(187) . chr(191)), true);
+        $data = (array) json_decode(trim($result['body'], chr(239) . chr(187) . chr(191)), true);
         if(empty($name)) return $data;
         return fast($data, $name);
     }
@@ -343,18 +348,7 @@ class WhttpClass
         $this->isdown = true;
         $this->method['fp_path'] = isset($this->method['savepath'])? $this->method['savepath']:"./";
         $this->method['fp_name'] = isset($this->method['savename'])? $this->method['savename']:"";
-
         $result = $this->send($this->config($this->method));
-        if ($this->ismulti == false || count($this->method['url']) == 1) {
-            if(empty($result['error'])){
-                if ($this->progress) {
-                    ProgressBar::progressBarPercent('Download:', 100, 50, ['█',' ']);
-                    printf('file: '.$result['download']['path']."\n");
-                }
-            } else {
-                if ($this->progress) printf("\n");
-            }
-        }
         return $result;
     }
 
@@ -383,20 +377,8 @@ class WhttpClass
         }
         // 内部请求获取文件总大小
         if ($url_info = get_urlfileslicing($options[0][CURLOPT_URL], $threads)) {
-            // echo 'file: '$fp_name."\n";
-            ProgressBar::progressBarPercent('Download:', 1, 50, ['█',' ']);
             // 内部并发请求
-            if ($progress) {
-                $i = 1;
-                get($url_info)->concurrent($threads)
-                    ->gany(function($data) use (&$i){
-                        $count = count($data['request']['url']);
-                        $progress =  $i++ / $count * 100;
-                        ProgressBar::progressBarPercent('Download:', $progress, 50, ['█',' ']);
-                    })->getDownload();
-            } else {
-                get($url_info)->concurrent($threads)->getDownload();
-            }
+            get($url_info)->concurrent($threads)->getDownload($progress);
             // 验证文件片段是否下载完成
             foreach ($url_info as $value1) {
                 if (!$tmpfile = file_exists(path_suffix($value1['param']['savepath']).$value1['param']['savename'])) {
@@ -892,7 +874,7 @@ class WhttpClass
                 CURLOPT_HEADER         => $this->isdown ? false : true,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_CUSTOMREQUEST  => $out['method'],
-                CURLOPT_MAXREDIRS      => 4,
+                CURLOPT_MAXREDIRS      => 10,
                 CURLOPT_FILETIME       => true,
                 CURLOPT_AUTOREFERER    => true,
                 CURLOPT_REFERER        => empty($out['referer'])? $url : $out['referer'],
@@ -919,7 +901,7 @@ class WhttpClass
 
             if (array_key_exists('writefunc', $out)) {
                 if (is_callable($out['writefunc'])) {
-                    $options[CURLOPT_WRITEFUNCTION] = [$this, 'parent::receiveResponse'];
+                    $options[CURLOPT_WRITEFUNCTION] = [$this, 'receiveResponse'];
                 }
             }
 
@@ -940,13 +922,11 @@ class WhttpClass
 
             if(!empty($out['cookie'])) $options[CURLOPT_COOKIE] = $out['cookie'];
             if ($this->isdown) {
-                if (count($urls) == 1) {
-                    if($this->progress) {
-                        $options[CURLOPT_NOPROGRESS] = false;
-                        $options[CURLOPT_PROGRESSFUNCTION] = [$this, 'parent::progress'];
-                    }
+                if($this->progress) {
+                    $options[CURLOPT_NOPROGRESS] = false;
+                    $options[CURLOPT_PROGRESSFUNCTION] = [$this, 'progress'];
                 }
-                $options[CURLOPT_WRITEFUNCTION] = [$this, 'parent::receiveDownload'];
+                $options[CURLOPT_WRITEFUNCTION] = [$this, 'receiveDownload'];
                 $options[CURLOPT_TIMEOUT_MS] = 0;
                 $options[CURLOPT_CONNECTTIMEOUT_MS] = 1000*60;
             }
@@ -1087,35 +1067,50 @@ class WhttpClass
         $this->exec        = null;
         $this->fptmp       = null;
         $this->call_return = null;
-        $this->downloaded  = null;
-        unset($this->method,$this->data,$this->exec,$this->fptmp,$this->call_return,$this->downloaded);
+        unset($this->method,$this->data,$this->exec,$this->fptmp,$this->call_return);
     }
 
     /**
-     * 进度条下载.
-     *
-     * @param $ch
-     * @param $countDownloadSize    总下载量
-     * @param $currentDownloadSize  当前下载量
-     * @param $countUploadSize      
-     * @param $currentUploadSize
+     * 进度条下载
+     * @Author   laoge
+     * @DateTime 2021-05-18
+     * @param    [type]     $ch           curl句柄
+     * @param    integer    $downloadSize 总下载大小
+     * @param    integer    $downloaded   现下载大小
+     * @param    integer    $uploadSize   总上传大小
+     * @param    integer    $uploaded     现上传大小
      */
-    private function progress($ch, $countDownloadSize, $currentDownloadSize, $countUploadSize, $currentUploadSize)
+    private function progress($ch, $downloadSize=0, $downloaded=0, $uploadSize=0, $uploaded=0)
     {
-        if (0 === $countDownloadSize) {
-            return false;
+        // 批量，单请求进度
+        if ($downloadSize > 0 && $downloaded > 0) {
+
+            $this->dataSize[0][(string)$ch] = $downloaded;
+            $this->dataSize[1][(string)$ch] = $downloadSize;
+
+            $downloaded = 0;
+            foreach ($this->dataSize[0] as $value) $downloaded = $downloaded+$value;
+            
+            $downloadSize = 0;
+            foreach ($this->dataSize[1] as $value) $downloadSize = $downloadSize+$value;
+    
+            $progress = $downloaded  / $downloadSize * 100;
+
+            if ($downloaded == $downloadSize) $this->dataSize[3][] = 1;
+
+            if (isset($this->dataSize[3])) {
+                if (count($this->dataSize[3]) < 2) {
+                    ProgressBar::progressBarPercent('Download:', $progress, 50, ['█',' ']);
+                }
+            } else {
+                ProgressBar::progressBarPercent('Download:', $progress, 50, ['█',' ']);
+            }
+        } 
+
+        // 上传进度
+        if ($uploadSize > 0 && $uploaded > 0) {
+
+
         }
-        if ($countDownloadSize > $currentDownloadSize) {
-            $this->downloaded = false;
-        }
-        elseif ($this->downloaded) {
-            return false;
-        }
-        elseif ($currentDownloadSize === $countDownloadSize) {
-            return false;
-        }
-        $bar = $currentDownloadSize / $countDownloadSize * 100;
-        $bar = (int)round($bar, 2);
-        ProgressBar::progressBarPercent('Download:', $bar, 50, ['█',' ']);
     }
 }

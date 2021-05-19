@@ -728,7 +728,7 @@ if (!function_exists('format_header')) {
         if(empty($value)) return [];
         // 分割成数组
         $header = explode(PHP_EOL, $value);
-        if (strstr($value, 'set-cookie')) $array['set-cookie'] = '';
+        if (strstr(strtolower($value), 'set-cookie')) $array['set-cookie'] = '';
         // 把多行响应头信息转为组数数据
         foreach ($header as $value) {
             // 从左查找":"的位置
