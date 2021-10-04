@@ -447,8 +447,8 @@ class WhttpClass
             $this->callback = $this->method['gany'];
             unset($this->method['gany']);
         }
-        $multi = [];
         do {
+            $multi = [];
             $concurrent = min($this->maxConcurrent, $this->_moreToDo());
             $result = $this->multi($options, $concurrent);
             foreach ($result as $value) $multi[] = $value;
