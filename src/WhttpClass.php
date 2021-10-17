@@ -380,7 +380,7 @@ class WhttpClass
             'header'  => $options[0][CURLOPT_HTTPHEADER]
         ];
         // 内部请求获取文件总大小
-        if ($url_info = get_urlfileslicing($param['url'], $threads, $param['header'])) {
+        if ($url_info = get_urlfileslicing($param['url'], $param['header'], $threads)) {
             // 内部并发请求
             get($url_info)->header($param['header'])->concurrent($threads)->getDownload($progress);
             // 验证文件片段是否下载完成

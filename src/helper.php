@@ -191,7 +191,7 @@ if (!function_exists('get_urlfileslicing')) {
      * @param    string     $url [description]
      * @return   [type]          [description]
      */
-    function get_urlfileslicing(string $url, int $count=20, array $header): array
+    function get_urlfileslicing(string $url, array $header, int $count=20): array
     {
         $url_info = [];
         $result = get($url)->header($header)->nobody()->timeoutms(1000*10);
