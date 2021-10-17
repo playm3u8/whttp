@@ -481,7 +481,7 @@ class WhttpClass
         } else {
             $ch = curl_init();
             curl_setopt_array($ch, $options[0]);
-            if($this->isdown) $this->fptmp[(string)$ch] = tmpfile();
+            if($this->isdown) $this->fptmp[(int)$ch] = tmpfile();
             $this->data = $this->getExec1($options[0], $ch);
             $this->curlcache($options, $this->data);
             curl_close($ch);
@@ -590,8 +590,8 @@ class WhttpClass
     private function getExec1($options, $ch)
     {
         $data = [];
-        if (!empty($this->exec[(string)$ch])) {
-            $exec = $this->exec[(string)$ch];
+        if (!empty($this->exec[(int)$ch])) {
+            $exec = $this->exec[(int)$ch];
         } else {
             if($this->ismulti) {
                 $exec = curl_multi_getcontent($ch);
@@ -610,7 +610,7 @@ class WhttpClass
         if ($this->isdown) {
             $down_files = $this->down_files($data, $options, $ch);
             if(!empty($down_files['error'])) {
-                @fclose($this->fptmp[(string)$ch]);
+                @fclose($this->fptmp[(int)$ch]);
             }
             foreach ($down_files as $key => $value) $data[$key] = $value;
         } else {
@@ -700,10 +700,10 @@ class WhttpClass
             $result['error'] = "没有权限写入失败";
             return $result;
         }
-        @fseek($this->fptmp[(string)$ch], 0);
-        $file_length = $this->pipe_streams($this->fptmp[(string)$ch], $fopen);
+        @fseek($this->fptmp[(int)$ch], 0);
+        $file_length = $this->pipe_streams($this->fptmp[(int)$ch], $fopen);
         @fclose($fopen);
-        @fclose($this->fptmp[(string)$ch]);
+        @fclose($this->fptmp[(int)$ch]);
         if ($file_length != $data['info']['size_download'] || $file_length == 0) {
             $result['error'] = "下载失败,文件接收大小不对";
             return $result;
@@ -727,10 +727,10 @@ class WhttpClass
         $mh = curl_multi_init();
         while ($num-- > 0) {
             $ch = curl_init();
-            $op[(string)$ch] = $options[$this->currentIndex];
+            $op[(int)$ch] = $options[$this->currentIndex];
             curl_setopt_array($ch, $options[$this->currentIndex]);
             curl_multi_add_handle($mh, $ch);
-            if($this->isdown) $this->fptmp[(string)$ch] = tmpfile();
+            if($this->isdown) $this->fptmp[(int)$ch] = tmpfile();
             $this->currentIndex++;
         }
 
@@ -743,7 +743,7 @@ class WhttpClass
             }
             while ($done = curl_multi_info_read($mh)) {
                 $ch = $done['handle'];
-                $this->data[$id] = $this->getExec1($op[(string)$ch], $ch);
+                $this->data[$id] = $this->getExec1($op[(int)$ch], $ch);
                 if (is_callable($this->callback)) {
                     $this->data[$id]['request'] = $this->method;
                     $this->data[$id]['complete'] = $this->complete++;
@@ -781,10 +781,10 @@ class WhttpClass
             }
         }
 
-        if (empty($this->exec[(string)$ch])) {
-            $this->exec[(string)$ch] = $exec;
+        if (empty($this->exec[(int)$ch])) {
+            $this->exec[(int)$ch] = $exec;
         } else {
-            $this->exec[(string)$ch] .= $exec;
+            $this->exec[(int)$ch] .= $exec;
         }
 
         return strlen($exec);
@@ -798,10 +798,10 @@ class WhttpClass
      */
     private function receiveDownload($ch, $exec)
     {
-        if (empty($this->fptmp[(string)$ch])) {
+        if (empty($this->fptmp[(int)$ch])) {
             return 0;
         } else {
-            return fwrite($this->fptmp[(string)$ch], $exec);
+            return fwrite($this->fptmp[(int)$ch], $exec);
         }
     }
 
