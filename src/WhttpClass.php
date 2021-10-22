@@ -1095,8 +1095,8 @@ class WhttpClass
         // 批量，单请求进度
         if ($downloadSize > 0 && $downloaded > 0) {
 
-            $this->dataSize[0][(string)$ch] = $downloaded;
-            $this->dataSize[1][(string)$ch] = $downloadSize;
+            $this->dataSize[0][(int)$ch] = $downloaded;
+            $this->dataSize[1][(int)$ch] = $downloadSize;
 
             $downloaded = 0;
             foreach ($this->dataSize[0] as $value) $downloaded = $downloaded+$value;
