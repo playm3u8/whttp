@@ -613,7 +613,7 @@ class WhttpClass
                 @fclose($this->fptmp[(int)$ch]);
             }
             foreach ($down_files as $key => $value) $data[$key] = $value;
-        } else {
+        } else if($exec != null) {
             $headerStr    = substr($exec, 0, $data['info']['header_size'] - 4);
             $headerStr    = explode("\r\n"."\r\n", $headerStr);
             $data['headers'] = format_header(end($headerStr));
