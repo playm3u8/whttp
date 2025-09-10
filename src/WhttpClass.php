@@ -625,7 +625,7 @@ class WhttpClass
                     if ($resourceType === 'stream') {
                         $closeResult = fclose($this->fptmp[$chunkId]);
                         if ($closeResult === false) {
-                            $result['error'] = "Failed to close file handle for chunk {$chunkId}";
+                            $data['error'] = "Failed to close file handle for chunk {$chunkId}";
                             return $data;
                         }
                     }
