@@ -609,9 +609,30 @@ class WhttpClass
         $data['download'] = [];
         if ($this->isdown) {
             $down_files = $this->down_files($data, $options, $ch);
+
+            // 2025.09.10
+            /*
             if(!empty($down_files['error'])) {
                 @fclose($this->fptmp[(int)$ch]);
             }
+            */            
+            if (!empty($down_files['error'])) {
+                $chunkId = (int)$ch;
+                // 检查资源是否存在且有效
+                if (isset($this->fptmp[$chunkId]) && is_resource($this->fptmp[$chunkId])) {
+                    // 额外检查资源类型
+                    $resourceType = get_resource_type($this->fptmp[$chunkId]);
+                    if ($resourceType === 'stream') {
+                        $closeResult = fclose($this->fptmp[$chunkId]);
+                        if ($closeResult === false) {
+                            $result['error'] = "Failed to close file handle for chunk {$chunkId}";
+                            return $data;
+                        }
+                    }
+                } 
+            }            
+
+            
             foreach ($down_files as $key => $value) $data[$key] = $value;
         } else if($exec != null) {
             $headerStr    = substr($exec, 0, $data['info']['header_size'] - 4);
